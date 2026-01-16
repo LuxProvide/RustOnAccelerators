@@ -74,6 +74,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
     // Define kernel
+    let ksize = 9;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // Find a usable device for this application
@@ -125,6 +126,8 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
             .set_arg(&output_b)
             .set_arg(&width)
             .set_arg(&height)
+            .set_arg(&weights_b)
+            .set_arg(&ksize)
             .set_global_work_size(buffer_size)
             .set_wait_event(&_weights_write_event)
             .enqueue_nd_range(&queue)?
