@@ -20,12 +20,12 @@ use opencl3::device::{CL_DEVICE_TYPE_GPU, Device, get_all_devices};
 use opencl3::kernel::{ExecuteKernel, Kernel};
 use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY};
 use opencl3::program::Program;
-use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_float};
+use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_float, cl_uint};
 use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void conv2d_gray_f32( __global const float* input, __global float* output, __global const int* width, __global const int* height, __global const float* kernel, __global const int* kSize) {
+__kernel void conv2d_gray_f32( __global const float* input, __global float* output,  const int width,  const int height, __global const float* kernel,  const int kSize) {
 
     const int x = (int)get_global_id(0);
     const int y = (int)get_global_id(1);
@@ -48,7 +48,7 @@ __kernel void conv2d_gray_f32( __global const float* input, __global float* outp
 
             const float p = input[rowBase + ix];
             const float w = kernel[ky * kSize + kx];
-            acc = fma(p, w, acc); 
+            acc += p*w; 
         }
     }
 
@@ -61,7 +61,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
     // Define kernel
-    let ksize = 9;
+    let ksize: cl_uint = 9;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // Find a usable device for this application
@@ -95,6 +95,9 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, buffer_size, ptr::null_mut())?
     };
 
+    let w: cl_uint = width;
+    let h: cl_uint = height;
+
     // Blocking write
     let _input_write_event =
         unsafe { queue.enqueue_write_buffer(&mut input_b, CL_BLOCKING, 0, &buffer, &[])? };
@@ -111,8 +114,8 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         ExecuteKernel::new(&kernel)
             .set_arg(&input_b)
             .set_arg(&output_b)
-            .set_arg(&width)
-            .set_arg(&height)
+            .set_arg(&w)
+            .set_arg(&h)
             .set_arg(&weights_b)
             .set_arg(&ksize)
             .set_global_work_size(buffer_size)
