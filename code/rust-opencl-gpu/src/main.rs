@@ -25,7 +25,7 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void conv2d_gray_f32( __global const float* input, __global float* output, const int* width, const int* height, __global const float* kernel, const int* kSize) {
+__kernel void conv2d_gray_f32( __global const float* input, __global float* output, __global const int* width, __global const int* height, __global const float* kernel, __global const int* kSize) {
 
     const int x = (int)get_global_id(0);
     const int y = (int)get_global_id(1);
@@ -38,13 +38,13 @@ __kernel void conv2d_gray_f32( __global const float* input, __global float* outp
     // Convolution sum
     for (int ky = 0; ky < kSize; ++ky) {
         int iy = y + ky - r;
-        iy = clamp(iy, 0, height - 1);
+        iy = max(0, min(iy, height - 1));
 
         const int rowBase = iy * width;
 
         for (int kx = 0; kx < kSize; ++kx) {
             int ix = x + kx - r;
-            ix = clamp(ix, 0, width - 1);
+            ix = max(0, min(ix, width - 1));
 
             const float p = input[rowBase + ix];
             const float w = kernel[ky * kSize + kx];
