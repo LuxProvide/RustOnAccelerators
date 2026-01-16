@@ -25,7 +25,12 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const PROGRAM_SOURCE: &str = r#"
-kernel void conv2d_gray_f32( global const float* input, global float* output, global const float* kernel, const int width,  const int height, const int kSize) {
+kernel void conv2d_gray_f32( __global const float* input, 
+                             __global float* output, 
+                             __global const float* weights, 
+                             const int width,  
+                             const int height, 
+                             const int kSize) {
 
     const int x = (int)get_global_id(0);
     const int y = (int)get_global_id(1);
@@ -47,7 +52,7 @@ kernel void conv2d_gray_f32( global const float* input, global float* output, gl
             ix = max(0, min(ix, width - 1));
 
             const float p = input[rowBase + ix];
-            const float w = kernel[ky * kSize + kx];
+            const float w = weights[ky * kSize + kx];
             acc += p*w; 
         }
     }
@@ -118,7 +123,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
             .set_arg(&w)
             .set_arg(&h)
             .set_arg(&ksize)
-            .set_global_work_size(buffer_size)
+            .set_global_work_sizes(&[width as usize,height as usize])
             .set_wait_event(&_weights_write_event)
             .enqueue_nd_range(&queue)?
     };
