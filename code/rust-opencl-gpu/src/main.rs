@@ -25,6 +25,8 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const PROGRAM_SOURCE: &str = r#"
+#define MAX_K 31
+
 kernel void conv2d_gray_f32( __global const float* input, 
                              __global float* output, 
                              __global const float* weights, 
@@ -34,10 +36,25 @@ kernel void conv2d_gray_f32( __global const float* input,
 
     const int x = (int)get_global_id(0);
     const int y = (int)get_global_id(1);
+    const int lx = (int)get_local_id(0);
+    const int ly = (int)get_local_id(1);
+    const int by = (int)get_local_size(1);
+
 
     if (x >= width || y >= height) return;
 
-    const int r = kSize / 2;
+
+    __local float kLocal[MAX_K * MAX_K];
+
+    const int lid = lx * by + ly;
+    if(lid < kSize * kSize){
+     kLocal[lid] = weights[lid];
+    }
+
+
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    const int r = (kSize-1) / 2;
     float acc = 0.0f;
 
     // Convolution sum
@@ -52,7 +69,7 @@ kernel void conv2d_gray_f32( __global const float* input,
             ix = max(0, min(ix, width - 1));
 
             const float p = input[rowBase + ix];
-            const float w = weights[ky * kSize + kx];
+            const float w = kLocal[ky * kSize + kx];
             acc += p*w; 
         }
     }
@@ -66,7 +83,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
     // Define kernel
-    let ksize: cl_uint = 9;
+    let ksize: cl_uint = 4;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // Find a usable device for this application
@@ -94,14 +111,20 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
     };
     let mut weights_b = unsafe {
-        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
+        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, (ksize*ksize) as usize, ptr::null_mut())?
     };
     let output_b = unsafe {
         Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, buffer_size, ptr::null_mut())?
     };
 
-    let w: cl_uint = width;
-    let h: cl_uint = height;
+    let local_x = 16;
+    let local_y = 16;
+    let global_x = ((width  + local_x - 1) / local_x) * local_x;
+    let global_y = ((height + local_y - 1) / local_y) * local_y;
+
+
+    let w:cl_uint = width;
+    let h:cl_uint = height;
 
     // Blocking write
     let _input_write_event =
@@ -123,7 +146,8 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
             .set_arg(&w)
             .set_arg(&h)
             .set_arg(&ksize)
-            .set_global_work_sizes(&[width as usize,height as usize])
+            .set_global_work_sizes(&[global_x as usize, global_y as usize])
+            .set_local_work_sizes(&[local_x as usize, local_y as usize])
             .set_wait_event(&_weights_write_event)
             .enqueue_nd_range(&queue)?
     };
