@@ -25,7 +25,7 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const PROGRAM_SOURCE: &str = r#"
-__kernel void conv2d_gray_f32( __global const float* input, __global float* output,   __global const float* kernel, const int width,  const int height, const int kSize) {
+kernel void conv2d_gray_f32( global const float* input, global float* output, global const float* kernel, const int width,  const int height, const int kSize) {
 
     const int x = (int)get_global_id(0);
     const int y = (int)get_global_id(1);
