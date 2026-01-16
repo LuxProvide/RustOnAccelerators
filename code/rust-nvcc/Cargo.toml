@@ -1,0 +1,13 @@
+[package]
+name = "vec_add"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+
+[dependencies]
+cust = { git="https://github.com/rust-gpu/rust-cuda" }
+nanorand = "0.7"
+
+[build-dependencies]
+cuda_builder = { git="https://github.com/rust-gpu/rust-cuda" }
+
