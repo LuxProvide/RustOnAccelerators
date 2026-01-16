@@ -65,7 +65,6 @@ __kernel void conv2d_gray_f32(
     }
 
     output[y * width + x] = acc;
-}
 }"#;
 
 const KERNEL_NAME: &str = "conv2d_gray_f32";
