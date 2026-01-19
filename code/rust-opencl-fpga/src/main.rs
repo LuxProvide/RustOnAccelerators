@@ -39,8 +39,12 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     let fpga_platform = match found {
         Some(p) => {
-            println!("Found: {}", p.to_string());
-            p
+            if let Some(tmp) = p.first() {
+                println!("Found: {}", tmp);
+                p;
+            } else {
+                panic!("No FPGA platform found");
+            }
         }
         None => {
             panic!("No FPGA platform found");
