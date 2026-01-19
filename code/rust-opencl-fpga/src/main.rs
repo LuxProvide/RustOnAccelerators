@@ -35,12 +35,12 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     let found = platform::get_platforms()
         .iter()
-        .find(|&&x| x[0].name() == "Intel(R) FPGA SDK for OpenCL(TM)");
+        .find(|&&x| x[0].name()? == "Intel(R) FPGA SDK for OpenCL(TM)");
 
     let fpga_platform = match found {
         Some(p) => {
             if let Some(tmp) = p.first() {
-                println!("Found: {}", tmp.name());
+                println!("Found: {}", tmp.name()?);
                 p;
             } else {
                 panic!("No FPGA platform found");
