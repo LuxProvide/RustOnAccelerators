@@ -9,17 +9,19 @@ fn main() {
     println!("cargo:rerun-if-env-changed=AOC");
     println!("cargo:rerun-if-env-changed=AOC_FLAGS");
 
+    let kernel_name = "conv2d_gray_f32";
+
     let aoc = env::var("AOC").unwrap_or_else(|_| "aoc".to_string());
     let aoc_flags = env::var("AOC_FLAGS").unwrap_or_default();
 
-    let kernel_src = Path::new("kernels/my_kernel.cl");
+    let kernel_filename = format!("kernels/{}.cl", kernel_name);
+    let kernel_src = Path::new(kernel_filename.as_str());
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-    let built = out_dir.join("my_kernel.aocx"); // adjust extension as needed
+    let built = out_dir.join(format!("{}.aocx", kernel_name)); // adjust extension as needed
 
     // 1) Build into OUT_DIR
     let mut cmd = Command::new(aoc);
-    //cmd.arg(kernel_src).arg("-o").arg(&built);
 
     if !aoc_flags.trim().is_empty() {
         for part in aoc_flags.split_whitespace() {
@@ -44,7 +46,7 @@ fn main() {
     let stable_dir = Path::new(&target_dir).join("aoc").join(&profile);
     fs::create_dir_all(&stable_dir).expect("failed to create stable aoc dir");
 
-    let stable_path = stable_dir.join("my_kernel.aocx");
+    let stable_path = stable_dir.join(format!("{}.aocx", kernel_name));
     fs::copy(&built, &stable_path).expect("failed to copy aoc output");
 
     // 3) Tell Rust code where the separate file is

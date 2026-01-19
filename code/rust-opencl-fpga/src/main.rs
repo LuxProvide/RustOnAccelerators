@@ -12,24 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use opencl3::Result;
+use getargs::{Arg, Options};
 use opencl3::command_queue::{CL_QUEUE_PROFILING_ENABLE, CommandQueue};
 use opencl3::context::Context;
-use opencl3::device::{CL_DEVICE_TYPE_ALL, Device, get_all_devices};
+use opencl3::device::{CL_DEVICE_TYPE_ACCELERATOR, Device, get_all_devices};
 use opencl3::kernel::{ExecuteKernel, Kernel};
 use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY};
 use opencl3::program::Program;
-use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_float};
+use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_float, cl_uint};
+use opencl3::{Result, platform};
 use std::ptr;
+use utils::{load_gray_f32, save_gray_f32};
 
-const KERNEL_NAME: &str = "vector_add";
+const KERNEL_NAME: &str = "conv2d_gray_f32";
 
-fn main() -> Result<()> {
+fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
+    let buffer_size = (width * height) as usize;
+
+    // Define kernel
+    let ksize: cl_uint = 4;
+    let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
+
+    let found = platform::get_platforms()
+        .iter()
+        .find(|&&x| x == "Intel(R) FPGA SDK for OpenCL(TM)");
+
+    let fpga_platform = match found {
+        Some(p) => {
+            println!("Found: {}", p);
+            p
+        }
+        None => {
+            panic!("No FPGA platform found");
+        }
+    };
+
     // Find a usable device for this application
-    let device_id = *get_all_devices(CL_DEVICE_TYPE_ALL)?
+    let device_id = *get_all_devices(CL_DEVICE_TYPE_ACCELERATOR)?
         .first()
         .expect("no device found in platform");
     let device = Device::new(device_id);
+
+    println!("Executing on {}", device.name()?);
 
     // Create a Context on an OpenCL device
     let context = Context::from_device(&device).expect("Context::from_device failed");
@@ -39,11 +63,8 @@ fn main() -> Result<()> {
         .expect("CommandQueue::create_default failed");
 
     // Read bistream
-    //let aocx_path = std::env::var("FPGA_AOCX_PATH")
-    //    .unwrap_or_else(|_| "target/aoc/debug/my_kernel.aocx".to_string());
-    let aocx_path = String::from(
-        "/mnt/tier2/project/p201038/EMMANUEL/OpenCL/rust-fpga/target/aoc/debug/my_kernel.aocx",
-    );
+    let aocx_path = std::env::var("FPGA_AOCX_PATH")
+        .unwrap_or_else(|_| "target/aoc/debug/conv2d_gray_f32.aocx".to_string());
     let aocx = std::fs::read(&aocx_path).unwrap();
 
     // Create program
@@ -54,31 +75,37 @@ fn main() -> Result<()> {
     program.build(&[device.id()], "")?;
     let kernel = Kernel::create(&program, KERNEL_NAME).expect("Kernel::create failed");
 
-    /////////////////////////////////////////////////////////////////////
-    // Compute data
-
-    // The input data
-    const ARRAY_SIZE: usize = 1000;
-    let ones: [cl_float; ARRAY_SIZE] = [1.0; ARRAY_SIZE];
-    let mut sums: [cl_float; ARRAY_SIZE] = [2.0; ARRAY_SIZE];
-
     // Create OpenCL device buffers
-    let mut x = unsafe {
-        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, ARRAY_SIZE, ptr::null_mut())?
+    let mut input_b = unsafe {
+        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
     };
-    let mut y = unsafe {
-        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, ARRAY_SIZE, ptr::null_mut())?
+    let mut weights_b = unsafe {
+        Buffer::<cl_float>::create(
+            &context,
+            CL_MEM_READ_ONLY,
+            (ksize * ksize) as usize,
+            ptr::null_mut(),
+        )?
     };
-    let z = unsafe {
-        Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, ARRAY_SIZE, ptr::null_mut())?
+    let output_b = unsafe {
+        Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, buffer_size, ptr::null_mut())?
     };
+
+    let local_x = 16;
+    let local_y = 16;
+    let global_x = ((width + local_x - 1) / local_x) * local_x;
+    let global_y = ((height + local_y - 1) / local_y) * local_y;
+
+    let w: cl_uint = width;
+    let h: cl_uint = height;
 
     // Blocking write
-    let _x_write_event = unsafe { queue.enqueue_write_buffer(&mut x, CL_BLOCKING, 0, &ones, &[])? };
+    let _input_write_event =
+        unsafe { queue.enqueue_write_buffer(&mut input_b, CL_BLOCKING, 0, buffer, &[])? };
 
     // Non-blocking write, wait for y_write_event
-    let y_write_event =
-        unsafe { queue.enqueue_write_buffer(&mut y, CL_NON_BLOCKING, 0, &sums, &[])? };
+    let _weights_write_event =
+        unsafe { queue.enqueue_write_buffer(&mut weights_b, CL_NON_BLOCKING, 0, &weights, &[])? };
 
     // Use the ExecuteKernel builder to set the kernel buffer and
     // cl_float value arguments, before setting the one dimensional
@@ -86,36 +113,89 @@ fn main() -> Result<()> {
     // Unwraps the Result to get the kernel execution event.
     let kernel_event = unsafe {
         ExecuteKernel::new(&kernel)
-            .set_arg(&x)
-            .set_arg(&y)
-            .set_arg(&z)
-            .set_global_work_size(ARRAY_SIZE)
-            .set_wait_event(&y_write_event)
+            .set_arg(&input_b)
+            .set_arg(&output_b)
+            .set_arg(&weights_b)
+            .set_arg(&w)
+            .set_arg(&h)
+            .set_arg(&ksize)
+            .set_global_work_sizes(&[global_x as usize, global_y as usize])
+            .set_local_work_sizes(&[local_x as usize, local_y as usize])
+            .set_wait_event(&_weights_write_event)
             .enqueue_nd_range(&queue)?
     };
 
-    let mut events: Vec<cl_event> = Vec::default();
-    events.push(kernel_event.get());
+    let events: Vec<cl_event> = vec![kernel_event.get()];
 
-    // Create a results array to hold the results from the OpenCL device
-    // and enqueue a read command to read the device buffer into the array
-    // after the kernel event completes.
-    let mut results: [cl_float; ARRAY_SIZE] = [0.0; ARRAY_SIZE];
     let read_event =
-        unsafe { queue.enqueue_read_buffer(&z, CL_NON_BLOCKING, 0, &mut results, &events)? };
+        unsafe { queue.enqueue_read_buffer(&output_b, CL_NON_BLOCKING, 0, buffer, &events)? };
 
     // Wait for the read_event to complete.
     read_event.wait()?;
-
-    for i in 0..ARRAY_SIZE {
-        print!("{} ", results[i]);
-    }
 
     // Calculate the kernel duration, from the kernel_event
     let start_time = kernel_event.profiling_command_start()?;
     let end_time = kernel_event.profiling_command_end()?;
     let duration = end_time - start_time;
     println!("kernel execution duration (ns): {}", duration);
+
+    Ok(())
+}
+
+fn main() -> Result<()> {
+    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
+
+    if args.is_empty() {
+        args.push(String::from("--help")); // help the user out :)
+    }
+    let mut opts = Options::new(args.iter().map(String::as_str));
+    let mut output_path = None;
+
+    while let Some(arg) = opts.next_arg().expect("argument parsing error") {
+        match arg {
+            Arg::Short('h') | Arg::Long("help") => {
+                eprintln!(
+                    r"Usage: rust-opencl-gpu [OPTIONS/ARGS] input ...
+                     This command execute an OpenCL Convolution kernel on GPU.
+                     -h, --help   display this help and exit
+                     -o, --output path to record output image"
+                );
+            }
+            Arg::Short('o') | Arg::Long("output") => {
+                output_path = opts.value_opt();
+            }
+            Arg::Positional(arg) => {
+                let metadata = std::fs::metadata(arg);
+                match metadata {
+                    Ok(m) => {
+                        if !m.is_file() {
+                            panic!("{arg:?} is not a file");
+                        }
+                    }
+                    Err(e) => {
+                        panic!("Error: {e:?}");
+                    }
+                }
+                let (mut buffer, w, h) =
+                    load_gray_f32(arg).expect("Cannot read image located at {arg}");
+                let status = run(&mut buffer, w, h);
+                match status {
+                    Ok(_) => {
+                        if let Some(p) = output_path {
+                            save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
+                        } else {
+                            save_gray_f32(arg, &buffer, w, h).expect("Cannot save image at {arg}");
+                        }
+                        println!("Execution complete");
+                    }
+                    Err(e) => {
+                        panic!("ClError: {e:?}");
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 
     Ok(())
 }

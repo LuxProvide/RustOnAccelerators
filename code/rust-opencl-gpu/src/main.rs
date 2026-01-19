@@ -111,7 +111,12 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
     };
     let mut weights_b = unsafe {
-        Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, (ksize*ksize) as usize, ptr::null_mut())?
+        Buffer::<cl_float>::create(
+            &context,
+            CL_MEM_READ_ONLY,
+            (ksize * ksize) as usize,
+            ptr::null_mut(),
+        )?
     };
     let output_b = unsafe {
         Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, buffer_size, ptr::null_mut())?
@@ -119,12 +124,11 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     let local_x = 16;
     let local_y = 16;
-    let global_x = ((width  + local_x - 1) / local_x) * local_x;
+    let global_x = ((width + local_x - 1) / local_x) * local_x;
     let global_y = ((height + local_y - 1) / local_y) * local_y;
 
-
-    let w:cl_uint = width;
-    let h:cl_uint = height;
+    let w: cl_uint = width;
+    let h: cl_uint = height;
 
     // Blocking write
     let _input_write_event =
