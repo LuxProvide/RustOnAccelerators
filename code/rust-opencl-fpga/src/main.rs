@@ -15,7 +15,7 @@
 use getargs::{Arg, Options};
 use opencl3::command_queue::{CL_QUEUE_PROFILING_ENABLE, CommandQueue};
 use opencl3::context::Context;
-use opencl3::device::{CL_DEVICE_NOT_FOUND, CL_DEVICE_TYPE_ACCELERATOR, Device, get_all_devices};
+use opencl3::device::{CL_DEVICE_NOT_FOUND, CL_DEVICE_TYPE_ACCELERATOR, Device};
 use opencl3::error_codes::{CL_INVALID_PLATFORM, ClError};
 use opencl3::kernel::{ExecuteKernel, Kernel};
 use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY};
@@ -46,7 +46,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let device_ids = intel_fpga_platform.get_devices(CL_DEVICE_TYPE_ACCELERATOR)?;
 
     if device_ids.len() == 0 {
-        return ClError::from(CL_DEVICE_NOT_FOUND);
+        return Err(ClError::from(CL_DEVICE_NOT_FOUND));
     }
 
     // Find a usable device for this application
@@ -60,7 +60,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let context = Context::from_device(&device)?;
 
     // Create a command_queue on the Context's device
-    let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?
+    let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?;
 
     // Read bistream
     let aocx_path = std::env::var("FPGA_AOCX_PATH")
