@@ -1,4 +1,4 @@
-use image::{GrayImage, ImageReader, ImageResult, Luma};
+use image::{GrayImage, ImageReader, ImageResult};
 
 /// Loads an image from disk, converts to grayscale, and returns a normalized f32 buffer in [0.0, 1.0].
 pub fn load_gray_f32(path: &str) -> image::ImageResult<(Vec<f32>, u32, u32)> {

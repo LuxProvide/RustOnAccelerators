@@ -17,7 +17,7 @@ use opencl3::command_queue::{CL_QUEUE_PROFILING_ENABLE, CommandQueue};
 use opencl3::context::Context;
 use opencl3::device::{CL_DEVICE_NOT_FOUND, CL_DEVICE_TYPE_ACCELERATOR, Device};
 use opencl3::error_codes::{CL_INVALID_PLATFORM, ClError};
-use opencl3::kernel::{ExecuteKernel, Kernel};
+use opencl3::kernel::Kernel;
 use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY};
 use opencl3::program::Program;
 use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING, cl_event, cl_float, cl_uint};
@@ -26,6 +26,8 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const KERNEL_NAME: &str = "conv2d_gray_f32";
+static FPGA_GEN_IMAGE: &str = concat!(env!("OUT_DIR"), "/conv2d_gray_f32.aocx");
+
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
@@ -62,10 +64,9 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?;
 
     // Read bistream
-    //let aocx_path = std::env::var("FPGA_AOCX_PATH")
-    //    .unwrap_or_else(|_| "target/aoc/debug/conv2d_gray_f32.aocx".to_string());
-    let aocx_path = String::from("/mnt/tier2/project/lxp/ekieffer/Training/RustOnAccelerators/code/rust-opencl-fpga/target/aoc/debug/conv2d_gray_f32.aocx");
-    println!("Path is {}",aocx_path);
+    let aocx_path = std::env::var("FPGA_AOCX_PATH")
+        .unwrap_or_else(|_| FPGA_GEN_IMAGE.to_string());
+
     let aocx = std::fs::read(&aocx_path).unwrap();
 
     // Create program
@@ -113,18 +114,14 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         kernel.set_arg(5, &ksize)?;
         queue.enqueue_task(kernel.get(),&[_weights_write_event.get()])?
     };
-    println!("Kernel started");
 
     let events: Vec<cl_event> = vec![kernel_event.get()];
 
     let read_event =
         unsafe { queue.enqueue_read_buffer(&output_b, CL_NON_BLOCKING, 0, buffer, &events)? };
 
-    println!("Wait for kernel to finish");
     // Wait for the read_event to complete.
     read_event.wait()?;
-
-    println!("kernel has finished");
 
     // Calculate the kernel duration, from the kernel_event
     let start_time = kernel_event.profiling_command_start()?;
