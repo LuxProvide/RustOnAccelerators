@@ -15,7 +15,8 @@
 use getargs::{Arg, Options};
 use opencl3::command_queue::{CL_QUEUE_PROFILING_ENABLE, CommandQueue};
 use opencl3::context::Context;
-use opencl3::device::{CL_DEVICE_TYPE_ACCELERATOR, Device, get_all_devices};
+use opencl3::device::{CL_DEVICE_NOT_FOUND, CL_DEVICE_TYPE_ACCELERATOR, Device, get_all_devices};
+use opencl3::error_codes::{CL_INVALID_PLATFORM, ClError};
 use opencl3::kernel::{ExecuteKernel, Kernel};
 use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_WRITE_ONLY};
 use opencl3::program::Program;
@@ -30,37 +31,36 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
     // Define kernel
-    let ksize: cl_uint = 4;
+    let ksize: cl_uint = 3;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
-    let platforms: Vec<Platform> = get_platforms()?;
+    let platforms: Vec<platform::Platform> = platform::get_platforms()?;
     let intel_fpga_platform = platforms
         .into_iter()
         .find(|p| {
             let name = p.name().unwrap_or_default();
-            let vendor = p.vendor().unwrap_or_default();
-            // Match either the platform name or vendor string.
-            // Tweak these substrings to match what you see on your machine.
             name.to_lowercase().contains("fpga")
         })
-        .ok_or_else(|| panic!("Intel FPGA OpenCL platform not found"))?;
+        .ok_or_else(|| ClError::from(CL_INVALID_PLATFORM))?;
+
+    let device_ids = intel_fpga_platform.get_devices(CL_DEVICE_TYPE_ACCELERATOR)?;
+
+    if device_ids.len() == 0 {
+        return ClError::from(CL_DEVICE_NOT_FOUND);
+    }
 
     // Find a usable device for this application
-    let device_id = *intel_fpga_platform
-        .get_devices(CL_DEVICE_TYPE_ACCELERATOR)
-        .first()
-        .expect("no device found in platform");
+    let device_id = *device_ids.first()?;
 
     let device = Device::new(device_id);
 
     println!("Executing on {}", device.name()?);
 
     // Create a Context on an OpenCL device
-    let context = Context::from_device(&device).expect("Context::from_device failed");
+    let context = Context::from_device(&device)?;
 
     // Create a command_queue on the Context's device
-    let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)
-        .expect("CommandQueue::create_default failed");
+    let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?
 
     // Read bistream
     let aocx_path = std::env::var("FPGA_AOCX_PATH")
@@ -73,7 +73,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     // Build the program for the device
     program.build(&[device.id()], "")?;
-    let kernel = Kernel::create(&program, KERNEL_NAME).expect("Kernel::create failed");
+    let kernel = Kernel::create(&program, KERNEL_NAME)?;
 
     // Create OpenCL device buffers
     let mut input_b = unsafe {
