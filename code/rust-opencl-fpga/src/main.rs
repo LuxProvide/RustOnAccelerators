@@ -46,11 +46,11 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let device_ids = intel_fpga_platform.get_devices(CL_DEVICE_TYPE_ACCELERATOR)?;
 
     // Find a usable device for this application
-    let device_id = *device_ids
+    let device_id = device_ids
         .first()
         .or_else(|| return Err(ClError::from(CL_DEVICE_NOT_FOUND)));
 
-    let device = Device::new(device_id);
+    let device = Device::new(*device_id);
 
     println!("Executing on {}", device.name()?);
 
