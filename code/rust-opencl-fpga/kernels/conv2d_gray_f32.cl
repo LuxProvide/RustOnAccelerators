@@ -7,45 +7,27 @@ kernel void conv2d_gray_f32( __global const float* input,
                              const int height, 
                              const int kSize) {
 
-    const int x = (int)get_global_id(0);
-    const int y = (int)get_global_id(1);
-    const int lx = (int)get_local_id(0);
-    const int ly = (int)get_local_id(1);
-    const int by = (int)get_local_size(1);
-
-
-    if (x >= width || y >= height) return;
-
-
     __local float kLocal[MAX_K * MAX_K];
+    #pragma unroll
+    for(int i=0; i<= kSize*kSize; i++){
 
-    const int lid = lx * by + ly;
-    if(lid < kSize * kSize){
-     kLocal[lid] = weights[lid];
+            kLocal[i] = weights[i];
+
     }
 
-
-    barrier(CLK_LOCAL_MEM_FENCE);
-
+    float acc;
     const int r = (kSize-1) / 2;
-    float acc = 0.0f;
-
-    // Convolution sum
-    for (int ky = 0; ky < kSize; ++ky) {
-        int iy = y + ky - r;
-        iy = max(0, min(iy, height - 1));
-
-        const int rowBase = iy * width;
-
-        for (int kx = 0; kx < kSize; ++kx) {
-            int ix = x + kx - r;
-            ix = max(0, min(ix, width - 1));
-
-            const float p = input[rowBase + ix];
-            const float w = kLocal[ky * kSize + kx];
-            acc += p*w; 
+    int ii,jj;
+    for( int i = r; i < height-r; i++){
+       for(int j = r; j < width-r; j++){
+            acc = 0;
+            #pragma unroll
+            for( int k = 0; k < kSize*kSize; k++){
+                jj = (k%kSize) + j - r;
+                ii = (k/kSize) + i - r;
+                acc += input[ii*width+jj] * kLocal[k];
+            }
+            output[i*width+j] = acc;
         }
     }
-
-    output[y * width + x] = acc;
   }

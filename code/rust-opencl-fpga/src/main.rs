@@ -62,8 +62,10 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?;
 
     // Read bistream
-    let aocx_path = std::env::var("FPGA_AOCX_PATH")
-        .unwrap_or_else(|_| "target/aoc/debug/conv2d_gray_f32.aocx".to_string());
+    //let aocx_path = std::env::var("FPGA_AOCX_PATH")
+    //    .unwrap_or_else(|_| "target/aoc/debug/conv2d_gray_f32.aocx".to_string());
+    let aocx_path = String::from("/mnt/tier2/project/lxp/ekieffer/Training/RustOnAccelerators/code/rust-opencl-fpga/target/aoc/debug/conv2d_gray_f32.aocx");
+    println!("Path is {}",aocx_path);
     let aocx = std::fs::read(&aocx_path).unwrap();
 
     // Create program
@@ -90,11 +92,6 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         Buffer::<cl_float>::create(&context, CL_MEM_WRITE_ONLY, buffer_size, ptr::null_mut())?
     };
 
-    let local_x = 16;
-    let local_y = 16;
-    let global_x = ((width + local_x - 1) / local_x) * local_x;
-    let global_y = ((height + local_y - 1) / local_y) * local_y;
-
     let w: cl_uint = width;
     let h: cl_uint = height;
 
@@ -106,31 +103,28 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let _weights_write_event =
         unsafe { queue.enqueue_write_buffer(&mut weights_b, CL_NON_BLOCKING, 0, &weights, &[])? };
 
-    // Use the ExecuteKernel builder to set the kernel buffer and
-    // cl_float value arguments, before setting the one dimensional
-    // global_work_size for the call to enqueue_nd_range.
-    // Unwraps the Result to get the kernel execution event.
+
     let kernel_event = unsafe {
-        ExecuteKernel::new(&kernel)
-            .set_arg(&input_b)
-            .set_arg(&output_b)
-            .set_arg(&weights_b)
-            .set_arg(&w)
-            .set_arg(&h)
-            .set_arg(&ksize)
-            .set_global_work_sizes(&[global_x as usize, global_y as usize])
-            .set_local_work_sizes(&[local_x as usize, local_y as usize])
-            .set_wait_event(&_weights_write_event)
-            .enqueue_nd_range(&queue)?
+        kernel.set_arg(0, &input_b)?;
+        kernel.set_arg(1, &output_b)?;
+        kernel.set_arg(2, &weights_b)?;
+        kernel.set_arg(3, &w)?;
+        kernel.set_arg(4, &h)?;
+        kernel.set_arg(5, &ksize)?;
+        queue.enqueue_task(kernel.get(),&[_weights_write_event.get()])?
     };
+    println!("Kernel started");
 
     let events: Vec<cl_event> = vec![kernel_event.get()];
 
     let read_event =
         unsafe { queue.enqueue_read_buffer(&output_b, CL_NON_BLOCKING, 0, buffer, &events)? };
 
+    println!("Wait for kernel to finish");
     // Wait for the read_event to complete.
     read_event.wait()?;
+
+    println!("kernel has finished");
 
     // Calculate the kernel duration, from the kernel_event
     let start_time = kernel_event.profiling_command_start()?;
