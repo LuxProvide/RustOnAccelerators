@@ -33,28 +33,24 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let ksize: cl_uint = 4;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
-    let found = platform::get_platforms()
-        .iter()
-        .find(|&&x| x[0].name()? == "Intel(R) FPGA SDK for OpenCL(TM)");
-
-    let fpga_platform = match found {
-        Some(p) => {
-            if let Some(tmp) = p.first() {
-                println!("Found: {}", tmp.name()?);
-                p;
-            } else {
-                panic!("No FPGA platform found");
-            }
-        }
-        None => {
-            panic!("No FPGA platform found");
-        }
-    };
+    let platforms: Vec<Platform> = get_platforms()?;
+    let intel_fpga_platform = platforms
+        .into_iter()
+        .find(|p| {
+            let name = p.name().unwrap_or_default();
+            let vendor = p.vendor().unwrap_or_default();
+            // Match either the platform name or vendor string.
+            // Tweak these substrings to match what you see on your machine.
+            name.to_lowercase().contains("fpga")
+        })
+        .ok_or_else(|| panic!("Intel FPGA OpenCL platform not found"))?;
 
     // Find a usable device for this application
-    let device_id = *get_all_devices(CL_DEVICE_TYPE_ACCELERATOR)?
+    let device_id = *intel_fpga_platform
+        .get_devices(CL_DEVICE_TYPE_ACCELERATOR)
         .first()
         .expect("no device found in platform");
+
     let device = Device::new(device_id);
 
     println!("Executing on {}", device.name()?);
