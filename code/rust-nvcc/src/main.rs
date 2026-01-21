@@ -31,7 +31,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     let stop = Event::new(EventFlags::DEFAULT)?;
 
     // allocate the GPU memory needed to house our numbers and copy them over.
-    let mut input_buf = DeviceBuffer::from_slice(buffer)?;
+    let input_buf = DeviceBuffer::from_slice(buffer)?;
     let weights_buf = weights.as_slice().as_dbuf()?;
 
     // allocate our output buffer. You could also use DeviceBuffer::uninitialized() to avoid the
@@ -50,7 +50,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
         1u32,
     );
 
-    println!("using {grid_size} blocks and {block_size} threads per block");
+    println!("using {:?} blocks and {:?} threads per block",grid_size, block_size);
 
     start.record(&stream)?;
 
@@ -72,7 +72,8 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     stop.record(&stream)?;
 
     // copy back the data from the GPU.
-    output_buf.copy_to(&mut out)?;
+    //output_buf.copy_to(&mut out)?;
+    output_buf.copy_to(buffer)?;
 
     println!(
         "kernel execution duration (ms): {}",
@@ -82,7 +83,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-fn main() -> Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1).collect::<Vec<_>>();
 
     if args.is_empty() {
@@ -95,7 +96,7 @@ fn main() -> Result<()> {
         match arg {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
-                    r"Usage: rust-opencl-gpu [OPTIONS/ARGS] input ...
+                    r"Usage: rust-nvcc-gpu [OPTIONS/ARGS] input ...
                      This command execute an OpenCL Convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
