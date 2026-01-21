@@ -4,11 +4,11 @@ use std::process::Command;
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let kernel_src = manifest_dir.join("kernels").join("vec_add.cu");
+    let kernel_src = manifest_dir.join("kernels").join("conv2d_gray_f32.cu");
 
     // Où Cargo met les artefacts de build pour cette cible/profil
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let ptx_out = out_dir.join("vec_add.ptx");
+    let ptx_out = out_dir.join("conv2d_gray_f32.ptx");
 
     // Rebuild si le kernel change
     println!("cargo:rerun-if-changed={}", kernel_src.display());
@@ -32,4 +32,3 @@ fn main() {
     // Optionnel: expose le chemin du PTX au code Rust (via env compile-time)
     println!("cargo:rustc-env=VEC_ADD_PTX={}", ptx_out.display());
 }
-
