@@ -41,23 +41,22 @@ pub unsafe fn conv2d_gray_f32(
 
         thread::sync_threads();
 
-        let r = ((k_size - 1) / 2) as usize;
+        let r = (k_size - 1) / 2;
         let mut acc: f32 = 0.0;
 
         // Convolution sum
         for ky in 0..k_size {
-            let iy = max(0, min(y + ky - r, height - 1)) as usize;
-            let iy = (y + ky -r) as usize;
-            let rowbase = (iy * width) as usize;
+            let mut iy = y + ky - r;
+            iy = max(0usize,min(iy, height-1));
             for kx in 0..k_size {
-                let ix = max(0, min(x + kx - r, width - 1)) as usize;
-                let ix =(x + kx - r) as usize;
-                let p = input[rowbase + ix];
+                let mut ix = x + kx - r;
+                ix = max(0usize,min(ix, width-1));
+                let p = input[iy * width + ix];
                 let w = unsafe { KLOCAL[ky * k_size + kx].assume_init() };
-//                acc += p ;//* w;
+                acc += p*w;
            }
         }
-//        let o = unsafe { output.add(y * width + x) };
-//        unsafe { *o = acc };
+        let o = unsafe { output.add(y * width + x) };
+        unsafe { *o = acc };
     }
 }

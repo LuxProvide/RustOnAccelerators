@@ -83,7 +83,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
 
     println!(
         "kernel execution duration (ms): {}",
-        Event::elapsed_time_f32(&start, &stop)?
+        Event::elapsed_time_f32(&stop, &start)?
     );
 
     Ok(())
