@@ -5,13 +5,14 @@ use cuda_std::prelude::*;
 
 pub const MAX_K: usize = 31;
 
+
 #[kernel]
 #[allow(improper_ctypes_definitions, clippy::missing_safety_doc)]
 pub unsafe fn conv2d_gray_f32(
     input: &[f32],
     output: *mut f32,
     weights: &[f32],
-    width: usize,
+    width:  usize,
     height: usize,
     k_size: usize,
 ) {
@@ -22,33 +23,41 @@ pub unsafe fn conv2d_gray_f32(
     let bx = thread::block_dim_x() as usize;
 
     if x < width && y < height {
+
+
+        const MAX_K_2D: usize = MAX_K * MAX_K;
+
         #[address_space(shared)]
-        static mut KLOCAL: [MaybeUninit<f32>; MAX_K] = [MaybeUninit::uninit(); MAX_K];
+        static mut KLOCAL: [MaybeUninit<f32>; MAX_K_2D] = [MaybeUninit::uninit(); MAX_K_2D];
+
 
         let lid = ly * bx + lx;
         if lid < k_size * k_size {
             unsafe {
                 KLOCAL[lid].write(weights[lid]);
+                
             }
         }
 
         thread::sync_threads();
 
-        let r = (k_size - 1) / 2;
+        let r = ((k_size - 1) / 2) as usize;
         let mut acc: f32 = 0.0;
 
         // Convolution sum
         for ky in 0..k_size {
-            let iy = max(0, min(y + ky - r, height - 1));
-            let rowbase = iy * width;
+            let iy = max(0, min(y + ky - r, height - 1)) as usize;
+            let iy = (y + ky -r) as usize;
+            let rowbase = (iy * width) as usize;
             for kx in 0..k_size {
-                let ix = max(0, min(x + kx - r, width - 1));
+                let ix = max(0, min(x + kx - r, width - 1)) as usize;
+                let ix =(x + kx - r) as usize;
                 let p = input[rowbase + ix];
                 let w = unsafe { KLOCAL[ky * k_size + kx].assume_init() };
-                acc += p * w;
-            }
+//                acc += p ;//* w;
+           }
         }
-        let o = unsafe { output.add(y * width + x) };
-        unsafe { *o = acc };
+//        let o = unsafe { output.add(y * width + x) };
+//        unsafe { *o = acc };
     }
 }

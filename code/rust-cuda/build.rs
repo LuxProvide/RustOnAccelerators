@@ -11,7 +11,7 @@ fn main() {
     let manifest_dir = path::PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
 
     CudaBuilder::new(manifest_dir.join("kernels"))
-        .copy_to(out_path.join("kernels.ptx"))
+        .copy_to(out_path.join("conv2d_gray_f32.ptx"))
         .build()
         .unwrap();
 }

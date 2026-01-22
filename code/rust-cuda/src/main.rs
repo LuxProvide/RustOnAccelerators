@@ -10,7 +10,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     let buffer_size = (width * height) as usize;
 
     // Define kernel
-    let ksize = 4;
+    let ksize = 3;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // initialize CUDA, this will pick the first available device and will
@@ -37,23 +37,24 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     // allocate our output buffer. You could also use DeviceBuffer::uninitialized() to avoid the
     // cost of the copy, but you need to be careful not to read from the buffer.
     let mut out = vec![0.0f32; buffer_size];
-    let output_buf = out.as_slice().as_dbuf()?;
+    let mut output_buf = out.as_slice().as_dbuf()?;
 
     // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
 
-    let block_size = (16u32, 16u32, 1u32); // 256 threads
+    let block_size = (16u32, 16u32); // 256 threads
 
     let grid_size = (
         (width + block_size.0 - 1) / block_size.0,
         (height + block_size.1 - 1) / block_size.1,
-        1u32,
     );
 
     println!(
         "using {:?} blocks and {:?} threads per block",
         grid_size, block_size
     );
+
+    println!("Kernel size: {}",ksize);
 
     start.record(&stream)?;
 
@@ -64,11 +65,13 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
             // slices are passed as two parameters, the pointer and the length.
             conv2d_gray_f32<<<grid_size, block_size, 0, stream>>>(
                 input_buf.as_device_ptr(),
+                input_buf.len(),
                 output_buf.as_device_ptr(),
                 weights_buf.as_device_ptr(),
-                width,
-                height,
-                ksize)
+                weights_buf.len(),
+                width as usize,
+                height as usize,
+                ksize as usize)
         )?;
     }
 
@@ -99,7 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         match arg {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
-                    r"Usage: rust-nvcc-gpu [OPTIONS/ARGS] input ...
+                    r"Usage: rust-cuda [OPTIONS/ARGS] input ...
                      This command execute an OpenCL Convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
