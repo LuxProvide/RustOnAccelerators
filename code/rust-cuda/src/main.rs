@@ -1,19 +1,17 @@
 use cust::prelude::*;
-use nanorand::{Rng, WyRand};
+use getargs::{Arg, Options};
 use std::error::Error;
+use utils::{load_gray_f32, save_gray_f32};
 
-/// How many numbers to generate and add together.
-const NUMBERS_LEN: usize = 100_000_000;
+// Generated PTX file will be located in OUT_DIR
+static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
-static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/kernels.ptx"));
+fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
+    let buffer_size = (width * height) as usize;
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // generate our random vectors.
-    let mut wyrand = WyRand::new();
-    let mut lhs = vec![2.0f32; NUMBERS_LEN];
-    wyrand.fill(&mut lhs);
-    let mut rhs = vec![0.0f32; NUMBERS_LEN];
-    wyrand.fill(&mut rhs);
+    // Define kernel
+    let ksize = 4;
+    let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // initialize CUDA, this will pick the first available device and will
     // make a CUDA context from it.
@@ -28,48 +26,120 @@ fn main() -> Result<(), Box<dyn Error>> {
     // GPU calls.
     let stream = Stream::new(StreamFlags::NON_BLOCKING, None)?;
 
+    // Create timing events
+    let start = Event::new(EventFlags::DEFAULT)?;
+    let stop = Event::new(EventFlags::DEFAULT)?;
+
     // allocate the GPU memory needed to house our numbers and copy them over.
-    let lhs_gpu = lhs.as_slice().as_dbuf()?;
-    let rhs_gpu = rhs.as_slice().as_dbuf()?;
+    let input_buf = DeviceBuffer::from_slice(buffer)?;
+    let weights_buf = weights.as_slice().as_dbuf()?;
 
     // allocate our output buffer. You could also use DeviceBuffer::uninitialized() to avoid the
     // cost of the copy, but you need to be careful not to read from the buffer.
-    let mut out = vec![0.0f32; NUMBERS_LEN];
-    let out_buf = out.as_slice().as_dbuf()?;
+    let mut out = vec![0.0f32; buffer_size];
+    let output_buf = out.as_slice().as_dbuf()?;
 
     // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
-    let vecadd = module.get_function("vecadd")?;
+    let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
 
-    // use the CUDA occupancy API to find an optimal launch configuration for the grid and block size.
-    // This will try to maximize how much of the GPU is used by finding the best launch configuration for the
-    // current CUDA device/architecture.
-    let (_, block_size) = vecadd.suggested_launch_configuration(0, 0.into())?;
+    let block_size = (16u32, 16u32, 1u32); // 256 threads
 
-    let grid_size = (NUMBERS_LEN as u32).div_ceil(block_size);
+    let grid_size = (
+        (width + block_size.0 - 1) / block_size.0,
+        (height + block_size.1 - 1) / block_size.1,
+        1u32,
+    );
 
-    println!("using {grid_size} blocks and {block_size} threads per block");
+    println!(
+        "using {:?} blocks and {:?} threads per block",
+        grid_size, block_size
+    );
+
+    start.record(&stream)?;
 
     // Actually launch the GPU kernel. This will queue up the launch on the stream, it will
     // not block the thread until the kernel is finished.
     unsafe {
         launch!(
             // slices are passed as two parameters, the pointer and the length.
-            vecadd<<<grid_size, block_size, 0, stream>>>(
-                lhs_gpu.as_device_ptr(),
-                lhs_gpu.len(),
-                rhs_gpu.as_device_ptr(),
-                rhs_gpu.len(),
-                out_buf.as_device_ptr(),
-            )
+            conv2d_gray_f32<<<grid_size, block_size, 0, stream>>>(
+                input_buf.as_device_ptr(),
+                output_buf.as_device_ptr(),
+                weights_buf.as_device_ptr(),
+                width,
+                height,
+                ksize)
         )?;
     }
 
-    stream.synchronize()?;
+    stop.record(&stream)?;
 
     // copy back the data from the GPU.
-    out_buf.copy_to(&mut out)?;
+    //output_buf.copy_to(&mut out)?;
+    output_buf.copy_to(buffer)?;
 
-    println!("{} + {} = {}", lhs[0], rhs[0], out[0]);
+    println!(
+        "kernel execution duration (ms): {}",
+        Event::elapsed_time_f32(&start, &stop)?
+    );
+
+    Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let mut args = std::env::args().skip(1).collect::<Vec<_>>();
+
+    if args.is_empty() {
+        args.push(String::from("--help")); // help the user out :)
+    }
+    let mut opts = Options::new(args.iter().map(String::as_str));
+    let mut output_path = None;
+
+    while let Some(arg) = opts.next_arg().expect("argument parsing error") {
+        match arg {
+            Arg::Short('h') | Arg::Long("help") => {
+                eprintln!(
+                    r"Usage: rust-nvcc-gpu [OPTIONS/ARGS] input ...
+                     This command execute an OpenCL Convolution kernel on GPU.
+                     -h, --help   display this help and exit
+                     -o, --output path to record output image"
+                );
+            }
+            Arg::Short('o') | Arg::Long("output") => {
+                output_path = opts.value_opt();
+            }
+            Arg::Positional(arg) => {
+                let metadata = std::fs::metadata(arg);
+                match metadata {
+                    Ok(m) => {
+                        if !m.is_file() {
+                            panic!("{arg:?} is not a file");
+                        }
+                    }
+                    Err(e) => {
+                        panic!("Error: {e:?}");
+                    }
+                }
+                let (mut buffer, w, h) =
+                    load_gray_f32(arg).expect("Cannot read image located at {arg}");
+                let status = run(&mut buffer, w, h);
+                match status {
+                    Ok(_) => {
+                        if let Some(p) = output_path {
+                            save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
+                        } else {
+                            save_gray_f32(arg, &buffer, w, h).expect("Cannot save image at {arg}");
+                        }
+                        println!("Execution complete");
+                    }
+                    Err(e) => {
+                        panic!("ClError: {e:?}");
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
 
     Ok(())
 }

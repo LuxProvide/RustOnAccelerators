@@ -10,14 +10,14 @@ extern "C" __global__ void conv2d_gray_f32(const float *input, float *output,
   const int y = (int)blockIdx.y * blockDim.y + threadIdx.y;
   const int lx = (int)threadIdx.x;
   const int ly = (int)threadIdx.y;
-  const int by = (int)blockDim.x;
+  const int bx = (int)blockDim.x;
 
   if (x >= width || y >= height)
     return;
 
   __shared__ float kLocal[MAX_K * MAX_K];
 
-  const int lid = lx * by + ly;
+  const int lid = lx * bx + ly;
   if (lid < kSize * kSize) {
     kLocal[lid] = weights[lid];
   }

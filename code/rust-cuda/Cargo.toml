@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 cust = { git="https://github.com/rust-gpu/rust-cuda" }
+getargs = "0.5.0"
 nanorand = "0.7"
+utils = {path = "../utils/"}
 
 [build-dependencies]
 cuda_builder = { git="https://github.com/rust-gpu/rust-cuda", features=["rustc_codegen_nvvm"] }
