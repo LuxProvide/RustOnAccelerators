@@ -46,7 +46,7 @@ kernel void conv2d_gray_f32( __global const float* input,
 
     __local float kLocal[MAX_K * MAX_K];
 
-    const int lid = lx * by + ly;
+    const int lid = lx * by + lx;
     if(lid < kSize * kSize){
      kLocal[lid] = weights[lid];
     }

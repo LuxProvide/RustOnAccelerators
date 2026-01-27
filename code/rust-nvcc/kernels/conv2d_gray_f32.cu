@@ -17,7 +17,7 @@ extern "C" __global__ void conv2d_gray_f32(const float *input, float *output,
 
   __shared__ float kLocal[MAX_K * MAX_K];
 
-  const int lid = ly * bx + ly;
+  const int lid = ly * bx + lx;
   if (lid < kSize * kSize) {
     kLocal[lid] = weights[lid];
   }
