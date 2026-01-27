@@ -28,7 +28,6 @@ use utils::{load_gray_f32, save_gray_f32};
 const KERNEL_NAME: &str = "conv2d_gray_f32";
 static FPGA_GEN_IMAGE: &str = concat!(env!("OUT_DIR"), "/conv2d_gray_f32.aocx");
 
-
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
@@ -64,8 +63,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?;
 
     // Read bistream
-    let aocx_path = std::env::var("FPGA_AOCX_PATH")
-        .unwrap_or_else(|_| FPGA_GEN_IMAGE.to_string());
+    let aocx_path = std::env::var("FPGA_AOCX_PATH").unwrap_or_else(|_| FPGA_GEN_IMAGE.to_string());
 
     let aocx = std::fs::read(&aocx_path).unwrap();
 
@@ -104,7 +102,6 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let _weights_write_event =
         unsafe { queue.enqueue_write_buffer(&mut weights_b, CL_NON_BLOCKING, 0, &weights, &[])? };
 
-
     let kernel_event = unsafe {
         kernel.set_arg(0, &input_b)?;
         kernel.set_arg(1, &output_b)?;
@@ -112,7 +109,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         kernel.set_arg(3, &w)?;
         kernel.set_arg(4, &h)?;
         kernel.set_arg(5, &ksize)?;
-        queue.enqueue_task(kernel.get(),&[_weights_write_event.get()])?
+        queue.enqueue_task(kernel.get(), &[_weights_write_event.get()])?
     };
 
     let events: Vec<cl_event> = vec![kernel_event.get()];
@@ -139,6 +136,7 @@ fn main() -> Result<()> {
         args.push(String::from("--help")); // help the user out :)
     }
     let mut opts = Options::new(args.iter().map(String::as_str));
+    let mut input_path = None;
     let mut output_path = None;
 
     while let Some(arg) = opts.next_arg().expect("argument parsing error") {
@@ -161,25 +159,10 @@ fn main() -> Result<()> {
                         if !m.is_file() {
                             panic!("{arg:?} is not a file");
                         }
+                        input_path = Some(arg);
                     }
                     Err(e) => {
                         panic!("Error: {e:?}");
-                    }
-                }
-                let (mut buffer, w, h) =
-                    load_gray_f32(arg).expect("Cannot read image located at {arg}");
-                let status = run(&mut buffer, w, h);
-                match status {
-                    Ok(_) => {
-                        if let Some(p) = output_path {
-                            save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
-                        } else {
-                            save_gray_f32(arg, &buffer, w, h).expect("Cannot save image at {arg}");
-                        }
-                        println!("Execution complete");
-                    }
-                    Err(e) => {
-                        panic!("ClError: {e:?}");
                     }
                 }
             }
@@ -187,5 +170,21 @@ fn main() -> Result<()> {
         }
     }
 
+    let (mut buffer, w, h) =
+        load_gray_f32(input_path.unwrap()).expect("Cannot read image located at {arg}");
+    let status = run(&mut buffer, w, h);
+    match status {
+        Ok(_) => {
+            if let Some(p) = output_path {
+                save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
+            } else {
+                save_gray_f32(input_path, &buffer, w, h).expect("Cannot save image at {arg}");
+            }
+            println!("Execution complete");
+        }
+        Err(e) => {
+            panic!("ClError: {e:?}");
+        }
+    }
     Ok(())
 }

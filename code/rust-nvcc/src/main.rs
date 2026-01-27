@@ -34,10 +34,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     let input_buf = DeviceBuffer::from_slice(buffer)?;
     let weights_buf = weights.as_slice().as_dbuf()?;
 
-    // allocate our output buffer. You could also use DeviceBuffer::uninitialized() to avoid the
-    // cost of the copy, but you need to be careful not to read from the buffer.
-    let mut out = vec![0.0f32; buffer_size];
-    let output_buf = out.as_slice().as_dbuf()?;
+    let output_buf = unsafe { DeviceBuffer::uninitialized(buffer.len() * size_of::<f32>())? };
 
     // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
@@ -50,7 +47,10 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
         1u32,
     );
 
-    println!("using {:?} blocks and {:?} threads per block",grid_size, block_size);
+    println!(
+        "using {:?} blocks and {:?} threads per block",
+        grid_size, block_size
+    );
 
     start.record(&stream)?;
 
