@@ -224,7 +224,8 @@ fn main() -> Result<()> {
                 println!("{}", p);
                 save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
             } else {
-                save_gray_f32(arg, &buffer, w, h).expect("Cannot save image at {arg}");
+                save_gray_f32(input_path.unwrap(), &buffer, w, h)
+                    .expect("Cannot save image at {arg}");
             }
             println!("Execution complete");
         }
