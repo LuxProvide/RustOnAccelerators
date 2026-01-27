@@ -105,7 +105,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             Arg::Short('o') | Arg::Long("output") => {
                 output_path = opts.value_opt();
-                input_path = Some(arg);
             }
             Arg::Positional(arg) => {
                 let metadata = std::fs::metadata(arg);
@@ -113,6 +112,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Ok(m) => {
                         if !m.is_file() {
                             panic!("{arg:?} is not a file");
+                        } else {
+                            input_path = Some(arg);
                         }
                     }
                     Err(e) => {

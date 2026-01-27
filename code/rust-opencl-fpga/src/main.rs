@@ -158,8 +158,9 @@ fn main() -> Result<()> {
                     Ok(m) => {
                         if !m.is_file() {
                             panic!("{arg:?} is not a file");
+                        } else {
+                            input_path = Some(arg);
                         }
-                        input_path = Some(arg);
                     }
                     Err(e) => {
                         panic!("Error: {e:?}");
