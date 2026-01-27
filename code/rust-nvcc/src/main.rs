@@ -90,6 +90,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         args.push(String::from("--help")); // help the user out :)
     }
     let mut opts = Options::new(args.iter().map(String::as_str));
+    let mut input_path = None;
     let mut output_path = None;
 
     while let Some(arg) = opts.next_arg().expect("argument parsing error") {
@@ -104,6 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             Arg::Short('o') | Arg::Long("output") => {
                 output_path = opts.value_opt();
+                input_path = Some(arg);
             }
             Arg::Positional(arg) => {
                 let metadata = std::fs::metadata(arg);
@@ -117,26 +119,27 @@ fn main() -> Result<(), Box<dyn Error>> {
                         panic!("Error: {e:?}");
                     }
                 }
-                let (mut buffer, w, h) =
-                    load_gray_f32(arg).expect("Cannot read image located at {arg}");
-                let status = run(&mut buffer, w, h);
-                match status {
-                    Ok(_) => {
-                        if let Some(p) = output_path {
-                            save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
-                        } else {
-                            save_gray_f32(arg, &buffer, w, h).expect("Cannot save image at {arg}");
-                        }
-                        println!("Execution complete");
-                    }
-                    Err(e) => {
-                        panic!("ClError: {e:?}");
-                    }
-                }
             }
             _ => {}
         }
     }
 
+    let (mut buffer, w, h) =
+        load_gray_f32(input_path.unwrap()).expect("Cannot read image located at {arg}");
+    let status = run(&mut buffer, w, h);
+    match status {
+        Ok(_) => {
+            if let Some(p) = output_path {
+                save_gray_f32(p, &buffer, w, h).expect("Cannot save image at {p}");
+            } else {
+                save_gray_f32(input_path.unwrap(), &buffer, w, h)
+                    .expect("Cannot save image at {arg}");
+            }
+            println!("Execution complete");
+        }
+        Err(e) => {
+            panic!("ClError: {e:?}");
+        }
+    }
     Ok(())
 }
