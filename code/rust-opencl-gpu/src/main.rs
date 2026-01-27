@@ -195,6 +195,7 @@ fn main() -> Result<()> {
             }
             Arg::Short('o') | Arg::Long("output") => {
                 output_path = opts.value_opt();
+                println!("Output path is {}",output_path.unwrap());
             }
             Arg::Positional(arg) => {
                 let metadata = std::fs::metadata(arg);
