@@ -7,7 +7,6 @@ use utils::{load_gray_f32, save_gray_f32};
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
-    let buffer_size = (width * height) as usize;
 
     // Define kernel
     let ksize = 3;
@@ -115,8 +114,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Ok(m) => {
                         if !m.is_file() {
                             panic!("{arg:?} is not a file");
-                        }
+                        }else{
                         input_path = Some(arg);
+                        }
                     }
                     Err(e) => {
                         panic!("Error: {e:?}");
