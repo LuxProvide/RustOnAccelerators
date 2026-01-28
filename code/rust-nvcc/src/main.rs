@@ -7,7 +7,6 @@ use utils::{load_gray_f32, save_gray_f32};
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
-
     // Define kernel
     let ksize = 4;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
