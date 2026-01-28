@@ -7,7 +7,6 @@ use utils::{load_gray_f32, save_gray_f32};
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
-    let buffer_size = (width * height) as usize;
 
     // Define kernel
     let ksize = 4;
@@ -34,7 +33,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     let input_buf = DeviceBuffer::from_slice(buffer)?;
     let weights_buf = weights.as_slice().as_dbuf()?;
 
-    let output_buf = unsafe { DeviceBuffer::uninitialized(buffer.len() * size_of::<f32>())? };
+    let output_buf = unsafe { DeviceBuffer::<f32>::uninitialized(buffer.len())? };
 
     // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
@@ -77,7 +76,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
 
     println!(
         "kernel execution duration (ms): {}",
-        Event::elapsed_time_f32(&start, &stop)?
+        Event::elapsed_time_f32(&stop, &start)?
     );
 
     Ok(())
