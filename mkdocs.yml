@@ -1,9 +1,9 @@
 site_name: Rust on MeluXina Accelerators
 nav:
+  - Tutorial description: 'index.md'
   - Rust in a nutshell: 'rust.md'
   - Rust with OpenCL: 'rust_opencl.md'
-  - Rust with nvcc: 'rust_nvcc.md'
-  - Rust-CUDA: 'rust_cuda.md'
+  - Rust with CUDA: 'rust_cuda.md'
 
 site_description: Webinar/Tutorial on how to use Rust on MeluXina Accelerators (GPUs + FPGAs) 
 site_author: Emmanuel Kieffer
@@ -40,9 +40,6 @@ theme:
 
 plugins:
   - search # necessary for search to work
-  - git-revision-date-localized:
-      type: date
-      fallback_to_build_date: true
   - progress
   - include-markdown
   - mkdocs-jupyter:
