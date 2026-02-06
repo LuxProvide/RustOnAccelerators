@@ -66,6 +66,15 @@ In this course, you will learn to:
 
 - How to build and use Rust-CUDA kernels with Rust on NVIDIA GPUs
 
+## What are we going to do ?
+
+In order to practice how to use Rust on MeluXina's accelerators, we will code a small convolution kernel for edge detection:
+
+
+![](./images/kernel.png)
+
+![](./images/edges.jpg)
+
 
 !!! danger "Remark"
     This course is not intended to be exhaustive. It is **NOT** a Rust course neither an OpenCL/CUDA course.
