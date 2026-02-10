@@ -1,9 +1,10 @@
 site_name: Rust on MeluXina Accelerators
 nav:
-  - Tutorial description: 'index.md'
-  - Rust in a nutshell: 'rust.md'
-  - Rust with OpenCL: 'rust_opencl.md'
-  - Rust with CUDA: 'rust_cuda.md'
+  - Turorial description: 'index.md'
+  - Rust on MeluXina: 
+      - Accelerators and setup: 'rust.md'
+      - Rust with OpenCL: 'rust_opencl.md'
+      - Rust with CUDA: 'rust_cuda.md'
 
 site_description: Webinar/Tutorial on how to use Rust on MeluXina Accelerators (GPUs + FPGAs) 
 site_author: Emmanuel Kieffer
@@ -27,26 +28,15 @@ theme:
   favicon: assets/favicon.png
   custom_dir: overrides
   language: en
-    #  palette:
-    #    primary: blue
-    #    accent:  light blue
   features:
-    #    - navigation.instant
-    #- navigation.instant.prefetch
     - navigation.expand
     - content.code.copy
     - content.code.select
-  # #   - tabs
 
 plugins:
   - search # necessary for search to work
   - progress
   - include-markdown
-  - mkdocs-jupyter:
-      include_source: true
-      execute: false
-      allow_errors: false
-
 
 # Extra stylesheets (incl. Twitter Bootstrap)
 extra_css:

@@ -70,10 +70,13 @@ In this course, you will learn to:
 
 In order to practice how to use Rust on MeluXina's accelerators, we will code a small convolution kernel for edge detection:
 
-
+<center markdown="1">
 ![](./images/kernel.png)
+</center>
 
+<center markdown="1">
 ![](./images/edges.jpg)
+</center>
 
 
 !!! danger "Remark"
