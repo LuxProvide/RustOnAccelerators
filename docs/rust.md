@@ -117,13 +117,6 @@ Cargo generates a standard project structure.
 cargo new my_app
 ```
 
-### 1. Project Creation
-Cargo generates a standard project structure.
-
-```bash
-cargo new my_app
-```
-
 Resulting layout:
 ```text
 my_app/
