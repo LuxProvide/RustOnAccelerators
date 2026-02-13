@@ -3,7 +3,9 @@
 #SBATCH -N 1
 #SBATCH -t 10:00
 #SBATCH -G 1
-#SBATCH -J
+#SBATCH -J rust-nvcc-cuda
+#SBATCH -o %x-%j.out
+#SBATCH -e %x-%j.err
 
 source setup_rustgpu.sh
 
