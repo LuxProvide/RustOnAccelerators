@@ -42,26 +42,25 @@ source setup_rustgpu.sh
 === "Rust-nvcc"
     ```bash linenums="1"
     cd rust-nvcc 
-    cargo build
+    cargo build --release
+    # Execute the code
+    ./target/release/rust-nvcc -o rust-nvcc-image.png ../../data/original_image.png
     ```
 
 
 === "Rust-cuda"
     ```bash linenums="1"
-
+    cd rust-cuda
+    cargo build --release
+    # Execute the code
+    ./target/release/rust-cuda -o rust-cuda-image.png ../../data/original_image.png
     ```
 ### Batch execution
 
-=== "Rust-nvcc"
-    ```bash linenums="1"
-    
-
-    ```
-
-=== "Rust-cuda"
-    ```bash linenums="1"
-
-    ```
+```bash
+cd RustOnAccelerators/code
+sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-nvcc-cuda.sh
+```
 
 
 
