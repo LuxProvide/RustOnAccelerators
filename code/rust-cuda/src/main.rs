@@ -7,7 +7,6 @@ use utils::{load_gray_f32, save_gray_f32};
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
-
     // Define kernel
     let ksize = 3;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
@@ -100,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
                     r"Usage: rust-cuda [OPTIONS/ARGS] input ...
-                     This command execute an OpenCL Convolution kernel on GPU.
+                     This command execute a CUDA Convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
                 );
@@ -114,8 +113,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                     Ok(m) => {
                         if !m.is_file() {
                             panic!("{arg:?} is not a file");
-                        }else{
-                        input_path = Some(arg);
+                        } else {
+                            input_path = Some(arg);
                         }
                     }
                     Err(e) => {

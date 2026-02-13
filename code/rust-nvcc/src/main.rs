@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
                     r"Usage: rust-nvcc [OPTIONS/ARGS] input ...
-                     This command execute an OpenCL Convolution kernel on GPU.
+                     This command execute an CUDA Convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
                 );
