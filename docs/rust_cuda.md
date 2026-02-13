@@ -1,4 +1,3 @@
-
 # A Rust host code executing CUDA kernel 
 
 ## Host code
@@ -66,7 +65,16 @@ sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-nvcc-cud
 
 - You should see the following results for both executions:
 
-![](./images/original_image.png)![](./images/rust-nvcc-cuda.png)
 
+| <center markdown="1">![](./images/original_image.png)</center> | <center markdown="1">![](./images/rust-nvcc-cuda.png)</center>|
+|----------------------------------------------------------------|---------------------------------------------------------------|
+| <center>Original</center>                                      | <center>Convolution</center>                                  |
+
+
+## Explore Further
+
+- Try to modify the kernel coefficients
+- Try to change the original image
+- Adapt the code for Tiled Matrix Multiplication
 
 

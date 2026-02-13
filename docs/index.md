@@ -16,16 +16,14 @@ config:
 ---
 flowchart TD
     A[Rust] --> B{Accelerators}
-    B --> C[FPGA]
-    B --> D[GPU]
+    B --> C[GPU]
+    B --> D[FPGA]
     C --> E[Host code in Rust 
-            Device code in OpenCL]
-    D --> F[Host code in Rust 
-            Device code in OpenCL]
+            Device code in CUDA C/C++]
+    C --> F[Host code in Rust 
+            Device code in Rust-CUDA]
     D --> G[Host code in Rust 
-            Device code in C/C++]
-    D --> H[Host code in Rust 
-            Device code in Rust]
+            Device code in OpenCL]
 ```
 
 

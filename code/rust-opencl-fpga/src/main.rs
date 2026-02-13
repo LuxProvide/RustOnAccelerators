@@ -1,17 +1,3 @@
-// Copyright (c) 2021 Via Technology Ltd. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 use getargs::{Arg, Options};
 use opencl3::command_queue::{CL_QUEUE_PROFILING_ENABLE, CommandQueue};
 use opencl3::context::Context;
@@ -143,7 +129,7 @@ fn main() -> Result<()> {
         match arg {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
-                    r"Usage: rust-opencl-gpu [OPTIONS/ARGS] input ...
+                    r"Usage: rust-opencl-fpga [OPTIONS/ARGS] input ...
                      This command execute an OpenCL Convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"

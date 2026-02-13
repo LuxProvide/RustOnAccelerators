@@ -15,8 +15,10 @@ check_mel3_node() {
 
 check_mel3_node
 
-module load util-linux ifpgasdk 520nmx
-
+module load util-linux jemalloc ifpgasdk 520nmx
+export JEMALLOC_PRELOAD=$(jemalloc-config --libdir)/libjemalloc.so.$(jemalloc-config --revision
+export HARD_IMAGE="/mnt/tier2/project/lxp/ekieffer/Training/Rust-CUDA/conv2d_gray_f32.aocx"
+export CODE_ROOT=$(realpath $PWD)
 export CARGO_HOME="$LOCALSCRATCH/${USER}/cargo"
 export RUSTUP_HOME="$LOCALSCRATCH/${USER}/rustup"
 echo "Setting CARGO_HOME=${CARGO_HOME}"
