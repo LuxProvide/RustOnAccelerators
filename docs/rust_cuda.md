@@ -61,6 +61,12 @@ source setup_rustgpu.sh
 cd RustOnAccelerators/code
 sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-nvcc-cuda.sh
 ```
+## Results
+
+
+- You should see the following results for both executions:
+
+![](./images/original_image.png)![](./images/rust-nvcc-cuda.png)
 
 
 
