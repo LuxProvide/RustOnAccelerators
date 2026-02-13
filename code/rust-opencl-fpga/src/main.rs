@@ -109,8 +109,8 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     // Calculate the kernel duration, from the kernel_event
     let start_time = kernel_event.profiling_command_start()?;
     let end_time = kernel_event.profiling_command_end()?;
-    let duration = end_time - start_time;
-    println!("kernel execution duration (ns): {}", duration);
+    let duration = (end_time - start_time) as f64;
+    println!("kernel execution duration (ms): {}", duration/1e6);
 
     Ok(())
 }
