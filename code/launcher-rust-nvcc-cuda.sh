@@ -24,4 +24,4 @@ cd ${CODE_ROOT}/rust-cuda
 echo "Building executable"
 cargo build --release
 echo "Execute rust-cuda"
-./target/release/rust-cuda -o rust-cuda-image.png ../../data/original_image.png
+./target/release/rust-cuda -orust-cuda-image.png ../../data/original_image.png
