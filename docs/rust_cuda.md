@@ -44,7 +44,7 @@ source setup_rustgpu.sh
     cd ${CODE_ROOT}/rust-nvcc 
     cargo build --release
     # Execute the code
-    ./target/release/rust-nvcc -o rust-nvcc-image.png ../../data/original_image.png
+    ./target/release/rust-nvcc -orust-nvcc-image.png ../../data/original_image.png
     ```
 
 
@@ -53,7 +53,7 @@ source setup_rustgpu.sh
     cd ${CODE_ROOT}/rust-cuda
     cargo build --release
     # Execute the code
-    ./target/release/rust-cuda -o rust-cuda-image.png ../../data/original_image.png
+    ./target/release/rust-cuda -orust-cuda-image.png ../../data/original_image.png
     ```
 ### Batch execution
 

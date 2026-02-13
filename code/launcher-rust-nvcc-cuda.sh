@@ -16,7 +16,7 @@ cd ${CODE_ROOT}/rust-nvcc
 echo "Building executable"
 cargo build --release
 echo "Execute rust-nvcc"
-./target/release/rust-nvcc -o rust-nvcc-image.png ../../data/original_image.png
+./target/release/rust-nvcc -orust-nvcc-image.png ../../data/original_image.png
 
 #-------------------rust-cuda
 echo "Going to rust-cuda folder"
@@ -24,4 +24,4 @@ cd ${CODE_ROOT}/rust-cuda
 echo "Building executable"
 cargo build --release
 echo "Execute rust-cuda"
-./target/release/rust-cuda -o rust-cuda-image.png ../../data/original_image.png
+./target/release/rust-cuda -orust-cuda-image.png ../../data/original_image.png
