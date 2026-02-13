@@ -8,7 +8,7 @@ static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx")
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
     // Define kernel
-    let ksize = 4;
+    let ksize = 3;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
     // initialize CUDA, this will pick the first available device and will
@@ -37,12 +37,11 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
 
-    let block_size = (16u32, 16u32, 1u32); // 256 threads
+    let block_size = (16u32, 16u32); // 256 threads
 
     let grid_size = (
         (width + block_size.0 - 1) / block_size.0,
         (height + block_size.1 - 1) / block_size.1,
-        1u32,
     );
 
     println!(

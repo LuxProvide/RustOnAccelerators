@@ -3,8 +3,8 @@ nav:
   - Turorial description: 'index.md'
   - Rust on MeluXina: 
       - Accelerators and setup: 'rust.md'
-      - Rust with OpenCL: 'rust_opencl.md'
       - Rust with CUDA: 'rust_cuda.md'
+      - Rust with OpenCL: 'rust_opencl.md'
 
 site_description: Webinar/Tutorial on how to use Rust on MeluXina Accelerators (GPUs + FPGAs) 
 site_author: Emmanuel Kieffer
