@@ -1,5 +1,6 @@
 #!/bin/bash -l
 #SBATCH -p gpu
+#SBATCH -q default
 #SBATCH -N 1
 #SBATCH -t 10:00
 #SBATCH -G 1
