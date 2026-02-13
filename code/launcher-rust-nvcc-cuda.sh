@@ -9,7 +9,7 @@ source setup_rustgpu.sh
 
 #-------------------rust-nvcc
 echo "Going to rust-nvcc folder"
-cd rust-nvcc
+cd ${CODE_ROOT}/rust-nvcc
 echo "Building executable"
 cargo build --release
 echo "Execute rust-nvcc"
@@ -17,7 +17,7 @@ echo "Execute rust-nvcc"
 
 #-------------------rust-cuda
 echo "Going to rust-cuda folder"
-cd rust-cuda
+cd ${CODE_ROOT}/rust-cuda
 echo "Building executable"
 cargo build --release
 echo "Execute rust-cuda"

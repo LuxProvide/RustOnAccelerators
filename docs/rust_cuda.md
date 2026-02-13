@@ -41,7 +41,7 @@ source setup_rustgpu.sh
 
 === "Rust-nvcc"
     ```bash linenums="1"
-    cd rust-nvcc 
+    cd ${CODE_ROOT}/rust-nvcc 
     cargo build --release
     # Execute the code
     ./target/release/rust-nvcc -o rust-nvcc-image.png ../../data/original_image.png
@@ -50,7 +50,7 @@ source setup_rustgpu.sh
 
 === "Rust-cuda"
     ```bash linenums="1"
-    cd rust-cuda
+    cd ${CODE_ROOT}/rust-cuda
     cargo build --release
     # Execute the code
     ./target/release/rust-cuda -o rust-cuda-image.png ../../data/original_image.png
