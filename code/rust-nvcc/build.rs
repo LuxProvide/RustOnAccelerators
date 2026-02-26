@@ -3,19 +3,20 @@ use std::path::PathBuf;
 use std::process::Command;
 
 fn main() {
+    // Absolute path to this crate's directory (set by Cargo).
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    // CUDA kernel source file compiled by this build script.
     let kernel_src = manifest_dir.join("kernels").join("conv2d_gray_f32.cu");
 
-    // Où Cargo met les artefacts de build pour cette cible/profil
+    // Cargo-provided output directory for build artifacts.
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    // Destination PTX path consumed at runtime via include_str!.
     let ptx_out = out_dir.join("conv2d_gray_f32.ptx");
 
-    // Rebuild si le kernel change
+    // Re-run this build script when the kernel source changes.
     println!("cargo:rerun-if-changed={}", kernel_src.display());
 
-    // Compile en PTX
-    // -ptx : sortie PTX
-    // -O3 : optimisation
+    // Compile CUDA source to PTX with optimization enabled.
     let status = Command::new("nvcc")
         .arg("-ptx")
         .arg("-O3")

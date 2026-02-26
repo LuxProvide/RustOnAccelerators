@@ -3,42 +3,42 @@ use getargs::{Arg, Options};
 use std::error::Error;
 use utils::{load_gray_f32, save_gray_f32};
 
-// Generated PTX file will be located in OUT_DIR
+// PTX generated at build time and embedded into the binary.
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {
-    // Define kernel
+    // 3x3 Laplacian-style convolution weights.
     let ksize = 3;
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
-    // initialize CUDA, this will pick the first available device and will
-    // make a CUDA context from it.
-    // We don't need the context for anything but it must be kept alive.
+    // Initialize CUDA and keep the context alive while GPU work is in flight.
     let _ctx = cust::quick_init()?;
 
-    // Make the CUDA module, modules just house the GPU code for the kernels we created.
-    // they can be made from PTX code, cubins, or fatbins.
+    // Load kernel code from PTX.
     let module = Module::from_ptx(PTX, &[])?;
 
-    // make a CUDA stream to issue calls to. You can think of this as an OS thread but for dispatching
-    // GPU calls.
+    // Stream used to enqueue asynchronous GPU operations.
     let stream = Stream::new(StreamFlags::NON_BLOCKING, None)?;
 
-    // Create timing events
+    // Events used for GPU timing.
     let start = Event::new(EventFlags::DEFAULT)?;
     let stop = Event::new(EventFlags::DEFAULT)?;
 
-    // allocate the GPU memory needed to house our numbers and copy them over.
+    // Allocate input buffer on device and copy host data.
     let input_buf = DeviceBuffer::from_slice(buffer)?;
+    // Alternate API to allocate/copy a device buffer.
     let weights_buf = weights.as_slice().as_dbuf()?;
 
+    // Allocate output buffer without initialization.
+    // This is safe here because the kernel writes all output elements before any read.
     let output_buf = unsafe { DeviceBuffer::<f32>::uninitialized(buffer.len())? };
 
-    // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
+    // Lookup the kernel function by symbol name.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
 
-    let block_size = (16u32, 16u32); // 256 threads
+    let block_size = (16u32, 16u32); // 16x16 = 256 threads per block.
 
+    // Round up so the grid covers the full image.
     let grid_size = (
         (width + block_size.0 - 1) / block_size.0,
         (height + block_size.1 - 1) / block_size.1,
@@ -51,13 +51,15 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
 
     println!("Kernel size: {}", ksize);
 
+    // Queue the start marker on this stream.
     start.record(&stream)?;
 
-    // Actually launch the GPU kernel. This will queue up the launch on the stream, it will
-    // not block the thread until the kernel is finished.
+    // Launch is unsafe due to the Rust -> CUDA FFI boundary.
+    // Rust cannot verify kernel signature, pointer validity/sizes,
+    // launch configuration, or device-side memory safety.
     unsafe {
         launch!(
-            // slices are passed as two parameters, the pointer and the length.
+            // Pass device pointers and their lengths plus scalar dimensions.
             conv2d_gray_f32<<<grid_size, block_size, 0, stream>>>(
                 input_buf.as_device_ptr(),
                 input_buf.len(),
@@ -70,10 +72,11 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
         )?;
     }
 
+    // Queue the stop marker after the kernel in the same stream order.
+    // `record` itself is not a host-side barrier.
     stop.record(&stream)?;
 
-    // copy back the data from the GPU.
-    //output_buf.copy_to(&mut out)?;
+    // Synchronous device-to-host copy of computed output.
     output_buf.copy_to(buffer)?;
 
     println!(
@@ -88,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut args = std::env::args().skip(1).collect::<Vec<_>>();
 
     if args.is_empty() {
-        args.push(String::from("--help")); // help the user out :)
+        args.push(String::from("--help")); // Show usage when invoked without arguments.
     }
     let mut opts = Options::new(args.iter().map(String::as_str));
     let mut input_path = None;
