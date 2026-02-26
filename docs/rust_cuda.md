@@ -2,6 +2,20 @@
 
 ## Host code
 
+- Line 1-4: we import the necessary modules. The **prelude** in Rust is a module that re-exports commonly used types and traits so you can import them all at once.
+- Line 7: the `OUT_DIR` environment variable contains the path to the device code build using `build.rs`.
+- Line 9-81: the run function applies the following kernel (3 X 3):
+
+      $$
+        \begin{bmatrix}
+          0 & 1  & 0\\\
+          1 & -4 & 1\\\
+          0 & 1 & 0
+        \end{bmatrix}
+      $$
+
+- We used the [cust](https://crates.io/crates/cust) crate, **a Safe, Fast, and user-friendly wrapper around the CUDA Driver API**.
+
 ```rust title="./code/rust-nvcc/src/main.rs" linenums="1"
 --8<-- "./code/rust-nvcc/src/main.rs"
 ```

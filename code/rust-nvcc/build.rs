@@ -28,7 +28,4 @@ fn main() {
     if !status.success() {
         panic!("nvcc failed compiling {}", kernel_src.display());
     }
-
-    // Optionnel: expose le chemin du PTX au code Rust (via env compile-time)
-    println!("cargo:rustc-env=VEC_ADD_PTX={}", ptx_out.display());
 }

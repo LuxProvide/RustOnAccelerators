@@ -140,7 +140,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Execution complete");
         }
         Err(e) => {
-            panic!("ClError: {e:?}");
+            panic!("Error: {e:?}");
         }
     }
 

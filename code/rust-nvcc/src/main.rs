@@ -30,15 +30,19 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
 
     // allocate the GPU memory needed to house our numbers and copy them over.
     let input_buf = DeviceBuffer::from_slice(buffer)?;
+    // Alternative way to obtain a buffer
     let weights_buf = weights.as_slice().as_dbuf()?;
 
+    // Creating an uninitialized buffer is unsafe
+    // Reading uninitialized memory is an undefined behavior, so caller must guarantee it gets fully written before any read/copy.
     let output_buf = unsafe { DeviceBuffer::<f32>::uninitialized(buffer.len())? };
 
-    // retrieve the `vecadd` kernel from the module so we can calculate the right launch config.
+    // retrieve the `conv2d_gray_f32` kernel from the module so we can calculate the right launch config.
     let conv2d_gray_f32 = module.get_function("conv2d_gray_f32")?;
 
     let block_size = (16u32, 16u32); // 256 threads
 
+    // We compute the grid size and make sure we have enough threads
     let grid_size = (
         (width + block_size.0 - 1) / block_size.0,
         (height + block_size.1 - 1) / block_size.1,
@@ -49,10 +53,16 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
         grid_size, block_size
     );
 
+    // We start record events on the stream
     start.record(&stream)?;
 
-    // Actually launch the GPU kernel. This will queue up the launch on the stream, it will
-    // not block the thread until the kernel is finished.
+    // Unsafe because kernel launches cross an FFI boundary (Rust -> CUDA PTX).
+    // Rust cannot check at compile time that:
+    // - kernel name/signature match the passed arguments,
+    // - device pointers are valid and sized correctly,
+    // - grid/block config is correct for the kernel,
+    // - kernel won’t do out-of-bounds or invalid memory access.
+
     unsafe {
         launch!(
             // slices are passed as two parameters, the pointer and the length.
@@ -66,10 +76,12 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
         )?;
     }
 
+    // Act as a barrier
+    // If it would not be present, we should use
+    // stream.synchronize()?
     stop.record(&stream)?;
 
-    // copy back the data from the GPU.
-    //output_buf.copy_to(&mut out)?;
+    // copy back the modified data to the original GPU.
     output_buf.copy_to(buffer)?;
 
     println!(
@@ -136,7 +148,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Execution complete");
         }
         Err(e) => {
-            panic!("ClError: {e:?}");
+            panic!("Error: {e:?}");
         }
     }
     Ok(())
