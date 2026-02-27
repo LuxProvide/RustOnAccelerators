@@ -20,6 +20,9 @@
 --8<-- "./code/rust-nvcc/src/main.rs"
 ```
 
+!!! warning "Some difference with the Rust-CUDA version"
+    TODO
+
 ## Device code
 
 ### C/C++ device code: building the CUDA kernel with `nvcc` 
