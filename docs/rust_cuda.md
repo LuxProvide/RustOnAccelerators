@@ -16,12 +16,26 @@
 
 - We used the [cust](https://crates.io/crates/cust) crate, **a Safe, Fast, and user-friendly wrapper around the CUDA Driver API**.
 
-```rust title="./code/rust-nvcc/src/main.rs" linenums="1"
---8<-- "./code/rust-nvcc/src/main.rs"
-```
+=== "./code/rust-nvcc/src/main.rs"
+    ```rust linenums="1" hl_lines="59-70"
+    --8<-- "./code/rust-nvcc/src/main.rs"
+    ```
+=== "./code/rust-cuda/src/main.rs"
+    ```rust linenums="1" hl_lines="65-78"
+    --8<-- "./code/rust-cuda/src/main.rs"
+    ```
 
-!!! warning "Some difference with the Rust-CUDA version"
-    TODO
+!!! warning "Some difference with the two host code version"
+    Both code should be in theory the same. Nevertheless, the device code for the `rust-cuda` crate is in Rust and care should be taken when launching the kernel. 
+    According to the Rust-CUDA [Kernel ABI](https://rust-gpu.github.io/rust-cuda/guide/kernel_abi.html), immutable slices should be passed via pointer/length pairs while buffers only requires a pointer.
+    The reason behind this is the approach taken by Rust-CUDA 
+    > The Rust CUDA Project is a project aimed at making Rust a tier-1 language for GPU computing using the CUDA Toolkit. It provides tools for **compiling Rust to fast PTX** code as well as libraries for using existing CUDA libraries with it.
+
+    So writing kernel in Rust requires the use of the LLVM PTX backend. The device Rust code is translated to PTX using the `rustc_codegen_nvvm` tool.
+
+    > The `rustc_codegen_nvvm` is a rustc backend that targets NVVM IR (a subset of LLVM IR) for the libnvvm library.Generates highly optimized PTX code which can be loaded by the CUDA Driver API to execute on the GPU.For now it is CUDA-only, but it may be used to target AMD GPUs in the future.
+
+    For more details, please have a look at [https://rust-gpu.github.io/rust-cuda/guide/getting_started.html](https://rust-gpu.github.io/rust-cuda/guide/getting_started.html)
 
 ## Device code
 
@@ -40,6 +54,13 @@
 ```rust title="./code/rust-cuda/kernels/src/lib.rs" linenums="1"
 --8<-- "./code/rust-cuda/kernels/src/lib.rs"
 ```
+
+!!! warning "Access data in the Rust kernel"
+    `input` and `weights` are normal slices but the output  is a raw pointer. Since output is mutable state shared by multiple kernels executing in parallel.
+
+    > Using &mut [T] would incorrectly indicate that it is non-shared mutable state, and therefore Rust CUDA does not allow mutable references as argument to kernels. Raw pointers do not have this restriction. Therefore, we use a pointer and only make a mutable reference once we have an element (c.add(i)) that we know won’t be touched by other kernel invocations.
+
+    For more details, please have a look at [https://rust-gpu.github.io/rust-cuda/guide/getting_started.html](https://rust-gpu.github.io/rust-cuda/guide/getting_started.html)
 
 ```rust title="./code/rust-cuda/build.rs" linenums="1"
 --8<-- "./code/rust-cuda/build.rs"

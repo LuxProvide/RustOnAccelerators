@@ -57,6 +57,11 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>
     // Launch is unsafe due to the Rust -> CUDA FFI boundary.
     // Rust cannot verify kernel signature, pointer validity/sizes,
     // launch configuration, or device-side memory safety.
+    // Immutable slices are passed via pointer/length pairs. This is unsafe
+    // because the kernel function is unsafe, but also because, like an FFI
+    // call, any mismatch between this call and the called kernel could
+    // result in incorrect behaviour or even uncontrolled crashes.
+
     unsafe {
         launch!(
             // Pass device pointers and their lengths plus scalar dimensions.
