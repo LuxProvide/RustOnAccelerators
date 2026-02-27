@@ -12,16 +12,20 @@ use std::ptr;
 use utils::{load_gray_f32, save_gray_f32};
 
 const KERNEL_NAME: &str = "conv2d_gray_f32";
+// Path to the built FPGA bitstream image (emulation or hardware).
 static FPGA_GEN_IMAGE: &str = concat!(env!("OUT_DIR"), "/conv2d_gray_f32.aocx");
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
-    // Define kernel
+    // Kernel parameters
     let ksize: cl_uint = 3;
+    // 3x3 convolution weights
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
+    // Query all OpenCL platforms
     let platforms: Vec<platform::Platform> = platform::get_platforms()?;
+    // Select a platform containing "fpga" in its name
     let intel_fpga_platform = platforms
         .into_iter()
         .find(|p| {
@@ -30,30 +34,33 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
         })
         .ok_or_else(|| ClError::from(CL_INVALID_PLATFORM))?;
 
+    // List accelerator devices on that platform
     let device_ids = intel_fpga_platform.get_devices(CL_DEVICE_TYPE_ACCELERATOR)?;
 
-    // Find a usable device for this application
+    // Take the first device (error if none)
     let device_id = match device_ids.first() {
         Some(ptr) => *ptr,
         None => return Err(ClError::from(CL_DEVICE_NOT_FOUND)),
     };
 
+    // Create a device handle
     let device = Device::new(device_id);
 
     println!("Executing on {}", device.name()?);
 
-    // Create a Context on an OpenCL device
+    // Create a context for the device
     let context = Context::from_device(&device)?;
 
-    // Create a command_queue on the Context's device
+    // Create a command queue with profiling enabled
     let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)?;
 
-    // Read bistream
+    // Get the path to the FPGA bitstream image
     let aocx_path = std::env::var("FPGA_AOCX_PATH").unwrap_or_else(|_| FPGA_GEN_IMAGE.to_string());
 
+    // Read the bitstream binary
     let aocx = std::fs::read(&aocx_path).unwrap();
 
-    // Create program
+    // Create the program from the device-specific binary
     let mut program =
         unsafe { Program::create_from_binary(&context, &[device.id()], &[aocx.as_slice()])? };
 
@@ -61,7 +68,7 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     program.build(&[device.id()], "")?;
     let kernel = Kernel::create(&program, KERNEL_NAME)?;
 
-    // Create OpenCL device buffers
+    // Allocate device buffers
     let mut input_b = unsafe {
         Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
     };
@@ -80,14 +87,15 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let w: cl_uint = width;
     let h: cl_uint = height;
 
-    // Blocking write
+    // Blocking write: input must be available before kernel launch
     let _input_write_event =
         unsafe { queue.enqueue_write_buffer(&mut input_b, CL_BLOCKING, 0, buffer, &[])? };
 
-    // Non-blocking write, wait for y_write_event
+    // Non-blocking write: we will wait on its event before launching the kernel
     let _weights_write_event =
         unsafe { queue.enqueue_write_buffer(&mut weights_b, CL_NON_BLOCKING, 0, &weights, &[])? };
 
+    // Set kernel arguments and enqueue the task (waits on weights transfer)
     let kernel_event = unsafe {
         kernel.set_arg(0, &input_b)?;
         kernel.set_arg(1, &output_b)?;
@@ -100,17 +108,18 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     let events: Vec<cl_event> = vec![kernel_event.get()];
 
+    // Enqueue read, waiting for the kernel to complete
     let read_event =
         unsafe { queue.enqueue_read_buffer(&output_b, CL_NON_BLOCKING, 0, buffer, &events)? };
 
-    // Wait for the read_event to complete.
+    // Wait for the readback to complete.
     read_event.wait()?;
 
-    // Calculate the kernel duration, from the kernel_event
+    // Report kernel execution time from the profiling event
     let start_time = kernel_event.profiling_command_start()?;
     let end_time = kernel_event.profiling_command_end()?;
     let duration = (end_time - start_time) as f64;
-    println!("kernel execution duration (ms): {}", duration/1e6);
+    println!("kernel execution duration (ms): {}", duration / 1e6);
 
     Ok(())
 }
@@ -119,7 +128,7 @@ fn main() -> Result<()> {
     let mut args = std::env::args().skip(1).collect::<Vec<_>>();
 
     if args.is_empty() {
-        args.push(String::from("--help")); // help the user out :)
+        args.push(String::from("--help")); // show usage when no args are provided
     }
     let mut opts = Options::new(args.iter().map(String::as_str));
     let mut input_path = None;
@@ -130,7 +139,7 @@ fn main() -> Result<()> {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
                     r"Usage: rust-opencl-fpga [OPTIONS/ARGS] input ...
-                     This command execute an OpenCL Convolution kernel on GPU.
+                     This command executes an OpenCL convolution kernel on FPGA.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
                 );

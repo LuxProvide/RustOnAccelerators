@@ -11,16 +11,18 @@ fn main() {
 
     let kernel_name = "conv2d_gray_f32";
 
+    // Optional path to the aoc compiler (defaults to "aoc").
     let aoc = env::var("AOC").unwrap_or_else(|_| "aoc".to_string());
+    // Optional flags passed to aoc.
     let aoc_flags = env::var("AOC_FLAGS").unwrap_or_default();
 
     let kernel_filename = format!("kernels/{}.cl", kernel_name);
     let kernel_src = Path::new(kernel_filename.as_str());
 
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
-    let built = out_dir.join(format!("{}.aocx", kernel_name)); // adjust extension as needed
+    let built = out_dir.join(format!("{}.aocx", kernel_name));
 
-    // 1) Build into OUT_DIR
+    // Build the FPGA bitstream into OUT_DIR.
     let mut cmd = Command::new(aoc);
 
     if !aoc_flags.trim().is_empty() {
@@ -29,6 +31,7 @@ fn main() {
         }
     }
 
+    // Invoke aoc on the kernel source.
     cmd.arg(kernel_src).arg("-o").arg(&built);
 
     eprintln!("Running: {:?}", cmd);
@@ -38,8 +41,7 @@ fn main() {
         panic!("aoc failed: {status}");
     }
 
-    // 2) Copy into a stable location under target/
-    // CARGO_TARGET_DIR may be set; if not, default is "target".
+    // Copy into a stable location under target/ (or CARGO_TARGET_DIR if set).
     let target_dir = env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".to_string());
     let profile = env::var("PROFILE").expect("PROFILE not set"); // "debug" or "release"
 
@@ -49,6 +51,6 @@ fn main() {
     let stable_path = stable_dir.join(format!("{}.aocx", kernel_name));
     fs::copy(&built, &stable_path).expect("failed to copy aoc output");
 
-    // 3) Tell Rust code where the separate file is
+    // Tell the host code where to find the bitstream.
     println!("cargo:rustc-env=FPGA_AOCX_PATH={}", stable_path.display());
 }

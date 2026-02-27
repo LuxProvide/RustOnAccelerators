@@ -2,10 +2,25 @@
 
 ![](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenCL_logo.svg/960px-OpenCL_logo.svg.png){align=right width=30%}
 
-- We are going to build the code in **emulation** mode
-- We are going to run with a prepare FPGA image on the real FPGA cards
+1. We first are going to build the code in **emulation** mode
+2. We are going to run with a pre-build FPGA image on the real FPGA cards
 
 ## Host code
+
+- Line 1-12: we import the necessary modules. The **prelude** in Rust is a module that re-exports commonly used types and traits so you can import them all at once.
+- Line 17-115: the `OUT_DIR` environment variable contains the path to the device code build using `build.rs`.
+- Line 9-81: the run function applies the same kernel (3 X 3):
+
+      $$
+        \begin{bmatrix}
+          0 & 1  & 0\\\
+          1 & -4 & 1\\\
+          0 & 1 & 0
+        \end{bmatrix}
+      $$
+
+- We used the [opencl3](https://crates.io/crates/opencl3) crate, **a Rust implementation of the Khronos OpenCL 3.0 API and extensions.**.
+
 
 ```rust title="./code/rust-opencl-fpga/src/main.rs" linenums="1"
 --8<-- "./code/rust-opencl-fpga/src/main.rs"

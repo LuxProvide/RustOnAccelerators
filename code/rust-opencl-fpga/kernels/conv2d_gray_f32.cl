@@ -1,20 +1,22 @@
 #define MAX_K 31
 
-kernel void conv2d_gray_f32( __global const float* input, 
-                             __global float* output, 
-                             __global const float* weights, 
+kernel void conv2d_gray_f32( __global const float* restrict input, 
+                             __global float* restrict output, 
+                             __global const float* restrict weights, 
                              const int width,  
                              const int height, 
                              const int kSize) {
 
+    // Cache weights in local memory to reduce repeated global reads.
     __local float kLocal[MAX_K * MAX_K];
+
+    // Fully unroll to encourage hardware replication on FPGA.
     #pragma unroll
-    for(int i=0; i<= kSize*kSize; i++){
-
-            kLocal[i] = weights[i];
-
+    for (int i = 0; i <= kSize * kSize; i++) {
+        kLocal[i] = weights[i];
     }
 
+    // Main convolution loop; FPGA can pipeline these operations.
     float acc;
     const int r = (kSize-1) / 2;
     int ii,jj;

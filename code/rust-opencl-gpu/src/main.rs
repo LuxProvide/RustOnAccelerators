@@ -24,7 +24,7 @@ kernel void conv2d_gray_f32( __global const float* input,
     const int y = (int)get_global_id(1);
     const int lx = (int)get_local_id(0);
     const int ly = (int)get_local_id(1);
-    const int by = (int)get_local_size(1);
+    const int bx = (int)get_local_size(0);
 
 
     if (x >= width || y >= height) return;
@@ -32,7 +32,7 @@ kernel void conv2d_gray_f32( __global const float* input,
 
     __local float kLocal[MAX_K * MAX_K];
 
-    const int lid = lx * by + lx;
+    const int lid = ly * bx + lx;
     if(lid < kSize * kSize){
      kLocal[lid] = weights[lid];
     }
@@ -68,11 +68,12 @@ const KERNEL_NAME: &str = "conv2d_gray_f32";
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let buffer_size = (width * height) as usize;
 
-    // Define kernel
+    // Kernel parameters
     let ksize: cl_uint = 4;
+    // 3x3 convolution weights
     let weights: Vec<f32> = vec![0.0, 1.0, 0.0, 1.0, -4.0, 1.0, 0.0, 1.0, 0.0];
 
-    // Find a usable device for this application
+    // Select the first available GPU device
     let device_id = *get_all_devices(CL_DEVICE_TYPE_GPU)?
         .first()
         .expect("no device found in platform");
@@ -80,19 +81,19 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
 
     println!("Executing on {}", device.name()?);
 
-    // Create a Context on an OpenCL device
+    // Create a context for the device
     let context = Context::from_device(&device).expect("Context::from_device failed");
 
-    // Create a command_queue on the Context's device
+    // Create a command queue with profiling enabled
     let queue = CommandQueue::create_default(&context, CL_QUEUE_PROFILING_ENABLE)
         .expect("CommandQueue::create_default failed");
 
-    // Build the OpenCL program source and create the kernel.
+    // Build the OpenCL program and create the kernel
     let program = Program::create_and_build_from_source(&context, PROGRAM_SOURCE, "")
         .expect("Program::create_and_build_from_source failed");
     let kernel = Kernel::create(&program, KERNEL_NAME).expect("Kernel::create failed");
 
-    // Create OpenCL device buffers
+    // Allocate device buffers
     let mut input_b = unsafe {
         Buffer::<cl_float>::create(&context, CL_MEM_READ_ONLY, buffer_size, ptr::null_mut())?
     };
@@ -116,18 +117,15 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let w: cl_uint = width;
     let h: cl_uint = height;
 
-    // Blocking write
+    // Blocking write: input must be available before kernel launch
     let _input_write_event =
         unsafe { queue.enqueue_write_buffer(&mut input_b, CL_BLOCKING, 0, buffer, &[])? };
 
-    // Non-blocking write, wait for y_write_event
+    // Non-blocking write: we will wait on its event before launching the kernel
     let _weights_write_event =
         unsafe { queue.enqueue_write_buffer(&mut weights_b, CL_NON_BLOCKING, 0, &weights, &[])? };
 
-    // Use the ExecuteKernel builder to set the kernel buffer and
-    // cl_float value arguments, before setting the one dimensional
-    // global_work_size for the call to enqueue_nd_range.
-    // Unwraps the Result to get the kernel execution event.
+    // Configure and enqueue the kernel (waits on weights transfer)
     let kernel_event = unsafe {
         ExecuteKernel::new(&kernel)
             .set_arg(&input_b)
@@ -147,14 +145,14 @@ fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<()> {
     let read_event =
         unsafe { queue.enqueue_read_buffer(&output_b, CL_NON_BLOCKING, 0, buffer, &events)? };
 
-    // Wait for the read_event to complete.
+    // Wait for the readback to complete
     read_event.wait()?;
 
-    // Calculate the kernel duration, from the kernel_event
+    // Report kernel execution time from the profiling event
     let start_time = kernel_event.profiling_command_start()?;
     let end_time = kernel_event.profiling_command_end()?;
-    let duration = end_time - start_time;
-    println!("kernel execution duration (ns): {}", duration);
+    let duration = (end_time - start_time) as f64;
+    println!("kernel execution duration (ms): {}", duration / 1e6);
 
     Ok(())
 }
@@ -163,7 +161,7 @@ fn main() -> Result<()> {
     let mut args = std::env::args().skip(1).collect::<Vec<_>>();
 
     if args.is_empty() {
-        args.push(String::from("--help")); // help the user out :)
+        args.push(String::from("--help")); // show usage when no args are provided
     }
     let mut opts = Options::new(args.iter().map(String::as_str));
     let mut input_path = None;
@@ -174,7 +172,7 @@ fn main() -> Result<()> {
             Arg::Short('h') | Arg::Long("help") => {
                 eprintln!(
                     r"Usage: rust-opencl-gpu [OPTIONS/ARGS] input ...
-                     This command execute an OpenCL Convolution kernel on GPU.
+                     This command executes an OpenCL convolution kernel on GPU.
                      -h, --help   display this help and exit
                      -o, --output path to record output image"
                 );
