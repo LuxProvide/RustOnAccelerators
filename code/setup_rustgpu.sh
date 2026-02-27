@@ -6,7 +6,7 @@ module load Clang
 module load CUDA
 
 export CODE_ROOT=$(realpath $PWD)
-export LLVM7_ROOT="/mnt/tier2/project/lxp/Scynergy26/RustOnAccelerator/LLVM-7.1.0"
+export LLVM7_ROOT="/mnt/tier2/project/lxp/ekieffer/Training/Rust-CUDA/LLVM-7.1.0"
 export CARGO_HOME="$LOCALSCRATCH/${USER}/cargo"
 export RUSTUP_HOME="$LOCALSCRATCH/${USER}/rustup"
 
