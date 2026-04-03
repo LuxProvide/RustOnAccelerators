@@ -35,7 +35,7 @@ Intel Stratix 520N-MX Block Diagram.
 
 - Clone the repository containing the code
 ```bash
-git clone https://github.com/LuxProvide/RustOnAccelerators.git
+git clone https://github.com/LuxProvide/RustOnAccelerators.git ${HOME}/RustOnAccelerators
 ```
 
 - All the setup scripts and crates are located in the `RustOnAccelerators/code` folder 

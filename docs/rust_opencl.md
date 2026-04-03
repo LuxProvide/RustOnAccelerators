@@ -62,7 +62,7 @@
  
 ```bash linenums="1"
 salloc -A <project_name> --reservation=<reservation_name> -t 30:00 -q default -p fpga
-cd RustOnAccelerators/code
+cd ${HOME}/RustOnAccelerators/code
 source setup_rustfpga.sh
 ```
 
@@ -84,7 +84,7 @@ source setup_rustfpga.sh
 ### Batch execution
 
 ```bash
-cd RustOnAccelerators/code
+cd ${HOME}/RustOnAccelerators/code
 sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-opencl-fpga.sh
 ```
 ## Results

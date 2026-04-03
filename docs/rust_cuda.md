@@ -72,7 +72,7 @@
  
 ```bash linenums="1"
 salloc -A <project_name> --reservation=<reservation_name> -t 30:00 -q default -p gpu
-cd RustOnAccelerators/code
+cd ${HOME}/RustOnAccelerators/code
 source setup_rustgpu.sh
 ```
 
@@ -95,7 +95,7 @@ source setup_rustgpu.sh
 ### Batch execution
 
 ```bash
-cd RustOnAccelerators/code
+cd ${HOME}/RustOnAccelerators/code
 sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-nvcc-cuda.sh
 ```
 ## Results
