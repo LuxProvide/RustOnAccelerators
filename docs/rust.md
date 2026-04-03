@@ -28,6 +28,11 @@ Intel Stratix 520N-MX Block Diagram.
 
 ## Setup
 
+- Connect to MeluXina using:
+
+    * Either using `ssh` on your local machine
+    * Or with the [OpenOnDemand portal](https://portal.lxp.lu/). Once logged in,  select "Clusters" and then ">_ Shell Access"
+
 - Clone first the repository and enter the `RustOnAccelerators` folder
 ```bash
 git clone https://github.com/LuxProvide/RustOnAccelerators.git
@@ -37,9 +42,6 @@ cd RustOnAccelerators/code
 
 - You need first to obtain an interactive job on the fpga partition and load a module
 ```bash
-salloc -A <project_name> --reservation=<reservation_name> -t 01:00:00 -q default -p gpu -N1
-# OR 
-# salloc -A <project_name> --reservation=<reservation_name> -t 01:00:00 -q default -p fpga -N1
 
 $tree -L 1
 .
@@ -55,17 +57,17 @@ $tree -L 1
 
 - The **code** folder contains **5** crates:
  
-  - `rust-cuda`: crate using Rust for the host and Rust for the device code
-  - `rust-nvcc`: crate using Rust for the host and C/C++ CUDA for the device code
-  - `rust-opencl-fpga`: crate using Rust for the host and C/C++ OpenCL for the device code with FPGAs as target devices
-  - `rust-opencl-gpu`: crate using Rust for the host and C/C++ OpenCL for the device code with GPUs as target devices
-  - `utils`: crate containing necessary libraries to load and save images
+    * `rust-cuda`: crate using Rust for the host and Rust for the device code
+    * `rust-nvcc`: crate using Rust for the host and C/C++ CUDA for the device code
+    * `rust-opencl-fpga`: crate using Rust for the host and C/C++ OpenCL for the device code with FPGAs as target devices
+    * `rust-opencl-gpu`: crate using Rust for the host and C/C++ OpenCL for the device code with GPUs as target devices
+    * `utils`: crate containing necessary libraries to load and save images
 
 - Two scripts are also here at your disposal:
-  - `setup_rustfpga.sh`: a script to be sourced to setup Rust and the toolchain as well as the required modules to use FPGAs
-  - `setup_rustgpu.sh`: a script to be sourced to setup Rust and the toolchain as well as the required modules to GPUs
+    * `setup_rustfpga.sh`: a script to be sourced to setup Rust and the toolchain as well as the required modules to use FPGAs
+    * `setup_rustgpu.sh`: a script to be sourced to setup Rust and the toolchain as well as the required modules to GPUs
 
-- A toml configuration file to configure the toolchain
+- `rust-toolchain.toml`: a toml configuration file to configure the toolchain
 
 ## Convolution explained
 
@@ -91,9 +93,9 @@ void convolution(float *img, float *kernel, float *imgf, int Nx, int Ny, int ker
       sum = 0;
       for (int ki = 0; ki<kernel_size; ki++)
 	        for (int kj = 0; kj<kernel_size; kj++){
-	              ii = kj + j - center;
-	              jj = ki + i - center;
-	              sum+=img[jj*Nx+ii]*kernel[ki*kernel_size + kj];
+	              ii = ki + i - center;
+	              jj = kj + j - center;
+	              sum+=img[ii*Nx+jj]*kernel[ki*kernel_size + kj];
 	        }
           imgf[i*Nx +j] = sum;
       }
@@ -185,9 +187,9 @@ fn main() {
 
 - The above example provided by the [official Cargo documentation](https://doc.rust-lang.org/cargo) shows how to build a C code 
 - Just before building your package, Cargo will compile the `build.rs` file and run it
-- One really important feature is the way the script interact with Cargo. Using the `println!` macro, you can instruct Cargo no perform or not some tasks
+- One really important feature is the way the script interact with Cargo. Using the `println!` macro, you can instruct Cargo to perform or not some tasks
 - In the above example, Cargo will only rerun the script if the `src/hello.c` file has changed
-- In order to build the device code for GPUs and FPGAs, we will use this mechanism. 
+- In order to build device codes for GPUs and FPGAs, we are going to use this mechanism 
 
 
 
