@@ -103,6 +103,6 @@ sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-opencl-f
 - Modify the host and the device code to run on GPU using OpenCL
 
 !!! info
-    Look inside the `code` folder for the solutions. We have already prepared the solution for you.
+    Look inside the `code` folder, we have already prepared the solution for you.
 
 
