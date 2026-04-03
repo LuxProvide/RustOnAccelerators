@@ -5,11 +5,11 @@ edition = "2024"
 build = "build.rs"
 
 [dependencies]
-cust = { git="https://github.com/rust-gpu/rust-cuda" }
+cust = { git="https://github.com/rust-gpu/rust-cuda", rev = "2479a9c77001e58d45beb0f972350fb89181a48e" }
 getargs = "0.5.0"
 nanorand = "0.7"
 utils = {path = "../utils/"}
 
 [build-dependencies]
-cuda_builder = { git="https://github.com/rust-gpu/rust-cuda" }
+cuda_builder = { git="https://github.com/rust-gpu/rust-cuda", rev = "2479a9c77001e58d45beb0f972350fb89181a48e" }
 

@@ -3,7 +3,7 @@ use getargs::{Arg, Options};
 use std::error::Error;
 use utils::{load_gray_f32, save_gray_f32};
 
-// PTX generated at build time and embedded into the binary.
+// PTX generated at build time
 static PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/conv2d_gray_f32.ptx"));
 
 fn run(buffer: &mut [f32], width: u32, height: u32) -> Result<(), Box<dyn Error>> {

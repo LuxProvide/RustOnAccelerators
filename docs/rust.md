@@ -33,17 +33,15 @@ Intel Stratix 520N-MX Block Diagram.
     * Either using `ssh` on your local machine
     * Or with the [OpenOnDemand portal](https://portal.lxp.lu/). Once logged in,  select "Clusters" and then ">_ Shell Access"
 
-- Clone first the repository and enter the `RustOnAccelerators` folder
+- Clone the repository containing the code
 ```bash
 git clone https://github.com/LuxProvide/RustOnAccelerators.git
-cd RustOnAccelerators/code
 ```
 
+- All the setup scripts and crates are located in the `RustOnAccelerators/code` folder 
 
-- You need first to obtain an interactive job on the fpga partition and load a module
 ```bash
 
-$tree -L 1
 .
 ├── rust-cuda
 ├── rust-nvcc
@@ -75,10 +73,11 @@ $tree -L 1
 ![](https://viso.ai/wp-content/uploads/2024/04/convolution-illustration.jpg)
 </center>
 
-- Below is a serial CPU code to apply image convolution.  
-- The two external loops apply the kernel for each given pixel of the matrix
-- The two internal loops through the kernel and multiply the weights to the current pixel's neighbors
-- Finally, the current pixel value will be the reduced sum of all weighted pixel's neighbors
+- Below is a serial CPU code to apply image convolution:  
+
+    * The two external loops apply the kernel for each given pixel of the matrix
+    * The two internal loops through the kernel and multiply the weights to the current pixel's neighbors
+    * Finally, the current pixel value will be the reduced sum of all weighted pixel's neighbors
 
 ```cpp title="convolution C/C++ function" linenums="1"
 void convolution(float *img, float *kernel, float *imgf, int Nx, int Ny, int kernel_size)
@@ -138,11 +137,11 @@ serde = "1.0"
 rand = "0.8"
 ```
 
-Cargo automatically:
-- Resolves compatible versions
-- Downloads crates from crates.io
-- Locks exact versions in `Cargo.lock`
-- Builds dependencies in the correct order
+- Cargo automatically:
+    * Resolves compatible versions
+    * Downloads crates from crates.io
+    * Locks exact versions in `Cargo.lock`
+    * Builds dependencies in the correct order
 
 ---
 
@@ -185,11 +184,11 @@ fn main() {
 
 ```
 
-- The above example provided by the [official Cargo documentation](https://doc.rust-lang.org/cargo) shows how to build a C code 
+- The above example provided by the [official Cargo documentation](https://doc.rust-lang.org/cargo) shows how to build a third-party C code 
 - Just before building your package, Cargo will compile the `build.rs` file and run it
 - One really important feature is the way the script interact with Cargo. Using the `println!` macro, you can instruct Cargo to perform or not some tasks
 - In the above example, Cargo will only rerun the script if the `src/hello.c` file has changed
-- In order to build device codes for GPUs and FPGAs, we are going to use this mechanism 
+- We are going to use this mechanism to build **device codes for GPUs and FPGAs**
 
 
 
