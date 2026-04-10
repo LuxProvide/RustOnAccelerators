@@ -28,6 +28,7 @@ Intel Stratix 520N-MX Block Diagram.
 
 ## Setup
 
+
 - Connect to MeluXina using:
 
     * Either using `ssh` on your local machine:
@@ -41,7 +42,10 @@ Intel Stratix 520N-MX Block Diagram.
 ---
 
 !!! warning "First time on MeluXina"
-    If this is the first time you connect to MeluXina, I strongly recommend you to use the shell on the [OpenOnDemand portal](https://portal.lxp.lu/).
+    - Make sure that you have generated an SSH key pair and uploaded your **<u>public</u>** SSH key (see [documentation](https://docs.lxp.lu/first-steps/connecting/)):
+      >To connect to MeluXina you need to generate an Ed25519 SSH key pair. The private key shall be protected by a passphrase with the following minimal complexity: a minimum of 12 characters, including upper and lower case characters, numbers and special characters.
+
+    - If this is the first time you connect to MeluXina, I strongly recommend you to use the shell on the [OpenOnDemand portal](https://portal.lxp.lu/).
 
 ---
 
