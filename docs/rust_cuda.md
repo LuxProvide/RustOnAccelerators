@@ -62,6 +62,15 @@
 
     For more details, please have a look at [https://rust-gpu.github.io/rust-cuda/guide/getting_started.html](https://rust-gpu.github.io/rust-cuda/guide/getting_started.html)
 
+!!! warning "Shared memory in the Rust kernel"
+    - Shared GPU memory is modelled with `#[address_space(shared)] static mut`
+    - Unlike standard `static mut`, it is not initialized, and only exists for the duration of the kernel's
+    (multi-)execution
+    - Because it is not initialized, it must be marked with `MaybeUninit`
+    - Every `write` attempt requires an unsafe block because writing a `static mut` is always unsafe
+    - Every `read` should subsequently used `assume_init`.
+
+
 ```rust title="./code/rust-cuda/build.rs" linenums="1"
 --8<-- "./code/rust-cuda/build.rs"
 ```
@@ -71,7 +80,7 @@
 ### Interactive execution
  
 ```bash linenums="1"
-salloc -A <project_name> --reservation=<reservation_name> -t 30:00 -q default -p gpu
+salloc -A <project_name> -t 30:00 -q default -p gpu
 cd ${HOME}/RustOnAccelerators/code
 source setup_rustgpu.sh
 ```
@@ -96,7 +105,7 @@ source setup_rustgpu.sh
 
 ```bash
 cd ${HOME}/RustOnAccelerators/code
-sbatch -A <project_name> --reservation=<reservation_name> launcher-rust-nvcc-cuda.sh
+sbatch -A <project_name> launcher-rust-nvcc-cuda.sh
 ```
 ## Results
 
