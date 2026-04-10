@@ -114,7 +114,7 @@ source setup_rustgpu.sh
 
 - Make sure you are not **already** on an **interactive session**.
 - Then apply the following commands:
-```bash
+```bash linenums="1"
 cd ${HOME}/RustOnAccelerators/code
 sbatch -A <project_name> launcher-rust-nvcc-cuda.sh
 ```
