@@ -30,8 +30,20 @@ Intel Stratix 520N-MX Block Diagram.
 
 - Connect to MeluXina using:
 
-    * Either using `ssh` on your local machine
-    * Or with the [OpenOnDemand portal](https://portal.lxp.lu/). Once logged in,  select "Clusters" and then ">_ Shell Access"
+    * Either using `ssh` on your local machine:
+
+    ![](./images/ssh_terminal.png)
+
+    * Or with the [OpenOnDemand portal](https://portal.lxp.lu/). Once logged in, select "Clusters" and then ">_ Shell Access"
+
+    ![](./images/shell_ood.png)
+
+---
+
+!!! warning "First time on MeluXina"
+    If this is the first time you connect to MeluXina, I strongly recommend you to use the shell on the [OpenOnDemand portal](https://portal.lxp.lu/).
+
+---
 
 - Clone the repository containing the code
 ```bash

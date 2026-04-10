@@ -43,7 +43,7 @@ We are first going to build the code in **emulation** mode and then, run a pre-b
 
 ## Execution on MeluXina
 
-!!! warning "What about memory accesses in FPGA ? "
+!!! note "What about memory accesses in FPGA ? "
     * In order to use **Direct Memory Access (DMA)**, we need to setup proper data alignment or the offline compiler will output the following warnings:
     ```bash
     Running on device: p520_hpc_m210h_g3x16 : BittWare Stratix 10 MX OpenCL platform (aclbitt_s10mx_pcie0)
@@ -55,14 +55,22 @@ We are first going to build the code in **emulation** mode and then, run a pre-b
     ** WARNING: [aclbitt_s10mx_pcie0] NOT using DMA to transfer 1024 bytes from device to host because of lack of alignment
     **                 host ptr (0xb611d20) and/or dev offset (0xc00) is not aligned to 64 bytes
     ``` 
-    To do so, we use [jemalloc](https://jemalloc.net):
+    To do so, we use [jemalloc](https://jemalloc.net/):
     ```bash
     module load jemalloc
     export JEMALLOC_PRELOAD=$(jemalloc-config --libdir)/libjemalloc.so.$(jemalloc-config --revision)
     LD_PRELOAD=${JEMALLOC_PRELOAD} ./exe
     ```
 
-### Interactive execution
+You can choose to execute the build and execute the code within an **1. interactive session** or by **2. submitting a batch job**. 
+
+!!! note "Interactive session"
+    - Once you have executed the code, please release the node as you won't need it anymore. 
+    - To do so, use `CTRL-d`.
+
+### **1. Interactive execution**
+
+- Apply the following commands:
  
 ```bash linenums="1"
 salloc -A <project_name> -t 30:00 -q default -p fpga
@@ -85,13 +93,39 @@ source setup_rustfpga.sh
     LD_PRELOAD=${JEMALLOC_PRELOAD} FPGA_AOCX_PATH=${HARD_IMAGE} ./target/release/rust-opencl-fpga -orust-opencl-fpga.png ../../data/original_image.png
     ```
 
-### Batch execution
+### **2. Batch execution**
+
+- Make sure you are not **already** on an **interactive session**.
+- Then apply the following commands:
 
 ```bash
 cd ${HOME}/RustOnAccelerators/code
 sbatch -A <project_name> launcher-rust-opencl-fpga.sh
 ```
+
+- The `sbatch` command should output `Submitted batch job <job_id>`.
+
+- Keep in mind the job id, it will be useful to look at the logs.
+
+- To see the status of your job, please use the following command: `squeue -j <job_id>`.
+
+- Check the output with the following command: `cat rust-opencl-fpga-<job_id>.out`.
+
+- You can also check for error with `cat rust-opencl-fpga-<job_id>.err`.
+
+
 ## Results
+
+- To open the resulting images, you can either:
+
+  - Use the `rsync` command from a terminal: 
+  ```bash
+  rsync -avz -e 'ssh -p 8822' <u1xxxxx>@login.lxp.lu:"RustOnAccelerators/code/**/rust-*.png"` 
+  ```
+
+  - Or use the [OpenOnDemand portal](https://portal.lxp.lu/). Once logged in, select "Files" -> "Home Directory" -> "RustOnAccelerators"
+  ![](./images/check_images_fpga.png)
+  - Click on the image.
 
 
 - You should see the following results for both executions:
