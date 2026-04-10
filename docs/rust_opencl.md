@@ -2,8 +2,12 @@
 
 ![](https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/OpenCL_logo.svg/960px-OpenCL_logo.svg.png){align=right width=30%}
 
-1. We first are going to build the code in **emulation** mode
-2. We are going to run with a pre-build FPGA image on the real FPGA cards
+We are first going to build the code in **emulation** mode and then, run a pre-build FPGA image on the hardware FPGA cards.
+
+!!! warning "Emulation vs Synthesis"
+    - **FPGA emulation** refers to the process of using a software or hardware system to mimic the behaviour of an FPGA device.
+    - This is usually done to test, validate, and debug FPGA designs before deploying them on actual hardware. 
+    - **FPGA synthesis** defaults to building the entire chip every time which can take hours depending on the kernel size. For this reason, we have **already** done the FPGA synthesis for you.
 
 ## Host code
 
@@ -19,7 +23,7 @@
         \end{bmatrix}
       $$
 
-- We used the [opencl3](https://crates.io/crates/opencl3) crate, **a Rust implementation of the Khronos OpenCL 3.0 API and extensions.**.
+- We used the [opencl3](https://crates.io/crates/opencl3) crate, **a Rust implementation of the Khronos OpenCL 3.0 API and extensions**.
 
 
 ```rust title="./code/rust-opencl-fpga/src/main.rs" linenums="1"
