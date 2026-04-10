@@ -127,7 +127,7 @@ sbatch -A <project_name> launcher-rust-nvcc-cuda.sh
 
 - Check the output with the following command: `cat rust-nvcc-cuda-<job_id>.out`.  
 
-- You can also check for error with `cat rust-nvcc-cuda-<job_id>.err`.
+- You can also check for possible errors with `cat rust-nvcc-cuda-<job_id>.err`.
 
 
 ## Results
