@@ -30,6 +30,7 @@ theme:
   language: en
   features:
     - navigation.expand
+    - navigation.footer
     - toc.integrate
     - content.code.copy
     - content.code.select
