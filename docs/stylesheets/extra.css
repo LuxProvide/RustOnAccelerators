@@ -65,13 +65,3 @@ details.no-details:not([open]) > * {
 details.no-details:not([open]) summary {
   display: block;
 }
-
-body {
-  background-image: url("../images/background.png");
-  background-repeat: no-repeat;
-  background-position: center top;
-  background-size: cover;
-  background-attachment: fixed;
-}
-
-
