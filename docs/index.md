@@ -1,11 +1,6 @@
-![](./images/scynergy.png){ align=left width="512" } 
-![](https://prev.rust-lang.org/logos/rust-logo-512x512.png){ align=right width="250" }
+# Rust On Accelerators ![](./images/gpu_rust.png){width=45% align=right}
 
-
-<br/><br/><br/><br/><br/>
-
-This tutorial is given in the context of the [Scynergy 2026 event](https://www.scynergy.events/) and [EPICURE](https://epicure-hpc.eu/), participants will explore how to program High-Performance GPU/FPGA cards using Rust. 
-
+This tutorial is given in the context of the **[Scynergy 2026 event](https://www.scynergy.events/)** and **[EPICURE](https://epicure-hpc.eu/)**, participants will explore how to program High-Performance GPU/FPGA cards using Rust.
 
 ## <u>Agenda</u>:
 
@@ -95,9 +90,12 @@ In order to practice how to use Rust on MeluXina's accelerators, we will code a 
 
 ## About this course
 
-![](https://epicure-hpc.eu/wp-content/uploads/2024/05/Logo_Verde_Preto.svg#373){ align=right width="250" }
+This course has been developed by the **Supercomputing Application Services** group at LuxProvide in the context of the **EPICURE** project.
 
-This course has been developed by the **Supercomputing Application Services** group at LuxProvide in the context of the EPICURE project.
+<div style="display: flex; gap: 1rem;">
+  <img src="./images/scynergy.png" alt="Image 1" style="width: 50%;">
+  <img src="https://epicure-hpc.eu/wp-content/uploads/2024/05/Logo_Verde_Preto.svg#373" alt="Image 2" style="width: 50%;">
+</div>
 
 
 
